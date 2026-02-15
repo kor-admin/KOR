@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worship Console & Editor (Pro Suite)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&family=Montserrat:wght@600;700;800&family=Oswald:wght@500;700&family=Playfair+Display:wght@600;700;800&family=Poppins:wght@500;600;700;800&family=Roboto:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- CORE VARIABLES --- */
+        * { box-sizing: border-box; outline: none; user-select: none; }
+        :root { 
+            --bg-color: #f8fafc;
+            --text-color: #334155; 
+            --sidebar-bg: #e2e8f0; 
+            --card-bg: #ffffff;
+            --accent: #8b5cf6; 
+            --accent-hover: #7c3aed; 
+            --highlight: rgba(139, 92, 246, 0.1);
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --success: #10b981;
+            --radius: 8px;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color);
+            color: var(--text-color); margin: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+        }
+        
+        /* --- GLOBAL UI HELPERS --- */
+        button { cursor: pointer; border: none; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+        button:active { transform: scale(0.98); }
+        
+        button:disabled { 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+            filter: grayscale(1); 
+            transform: none !important; 
+        }
+
+        .btn { padding: 8px 12px; border-radius: var(--radius); font-size: 0.85rem; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 6px; background: white; border: 1px solid var(--border); color: var(--text-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn:hover:not(:disabled) { background: #f1f5f9; border-color: var(--accent); }
+        .btn.primary { background: var(--accent); color: white; border: none; }
+        .btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+        .btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .btn.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); }
+        .btn.success { background: var(--success); color: white; border: none; }
+
+        /* --- MODE SWITCHER (TOP BAR) --- */
+        #top-nav {
+            height: 50px; background: white; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            z-index: 100;
+        }
+        .app-title { font-weight: 700; color: #0f172a; display: flex; gap: 10px; align-items: center; }
+        .mode-switch { display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px; gap: 4px; }
+        .mode-btn { padding: 6px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; border: 1px solid transparent; }
+        .mode-btn.active { background: white; color: var(--accent);
+            border-color: var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* --- VIEWS CONTAINER --- */
+        .view-container { flex: 1; position: relative; overflow: hidden; display: flex; }
+        
+        /* --- LAYOUTS (Shared) --- */
+        .sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 20; }
+        .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.5); }
+        .song-list-container { overflow-y: auto; flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+        .song-item { padding: 4px 10px; border-radius: 6px; cursor: pointer;
+            font-size: 0.75rem; color: #475569; transition: 0.2s; font-weight: 500; border: 1px solid transparent; display: flex; align-items: center; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; }
+        .song-item:hover { background: rgba(255,255,255,0.8); color: var(--accent); }
+        .song-item.active { background: var(--accent); color: white; font-weight: bold;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+        .song-item.dragging { opacity: 0.5; border: 1px dashed var(--accent); background: #e0f2fe; }
+
+        /* --- LIBRARY LIST COMPACT STYLES --- */
+        #lib-drive-list div, #lib-firebase-list div {
+            padding: 6px 10px !important; font-size: 0.75rem !important;
+        }
+        #lib-drive-list .btn, #lib-firebase-list .btn {
+            padding: 4px 8px !important; font-size: 0.7rem !important;
+        }
+
+        /* --- PRESENTER SPECIFIC --- */
+        #view-presenter { width: 100%; height: 100%; display: flex; }
+        #main-area { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--bg-color); }
+        #right-pane { width: 240px; background: var(--sidebar-bg); border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 16px; gap: 15px; z-index: 20; overflow-y: auto; }
+        
+        #lyrics-grid { flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; align-content: start; }
+        
+        /* --- CARD STYLES --- */
+.lyric-card { 
+    position: relative; 
+    background: var(--card-bg); 
+    border: 1px solid var(--border); 
+    border-radius: 8px; 
+    padding: 8px; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    height: 150px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+    align-items: flex-start !important; 
+    text-align: left !important;
+}
+        .lyric-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .lyric-card.active { border-color: var(--accent); background: #f0fdf4; box-shadow: 0 0 0 2px var(--accent); }
+        
+        .card-label { 
+            font-size: 0.75rem; font-weight: 700; color: var(--accent); 
+            text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; text-align: left !important;
+        }
+        
+        .card-preview { 
+            flex: 1; width: 100%; overflow-y: auto; 
+            color: #334155; font-weight: 500; font-size: 11px; line-height: 1.3;
+            white-space: pre-wrap; text-align: left !important; padding-right: 4px;
+        }
+        .card-preview img, .card-preview video { width: 100%; height: 100%; object-fit: contain; background: #000; border-radius: 4px; }
+        .card-preview::-webkit-scrollbar { width: 4px; }
+        .card-preview::-webkit-scrollbar-track { background: transparent; }
+        .card-preview::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+        .nav-bar { height: 70px; border-top: 1px solid var(--border); background: var(--sidebar-bg); display: flex;
+            justify-content: center; align-items: center; gap: 20px; padding: 0 20px; }
+        #timer { font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: var(--text-color); text-align: center; margin-bottom: 20px; }
+        
+        .color-grid { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        .color-dot { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 1px solid #cbd5e1; transition: 0.2s; }
+        .color-dot.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+        input[type=range] { width: 100%; height: 6px; border-radius: 3px; background: #cbd5e1; outline: none; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+            background: var(--accent); cursor: pointer; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        /* --- SONG NOTIFICATION SLIDER --- */
+        #song-notification-toast {
+            position: fixed; top: 70px; left: -400px;
+            background: #FF1493; color: white;
+            padding: 12px 24px; border-radius: 0 50px 50px 0;
+            box-shadow: 4px 4px 15px rgba(0,0,0,0.15);
+            z-index: 1000; font-weight: 600;
+            display: flex; align-items: center; gap: 12px;
+            transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+        #song-notification-toast.show { left: 0; }
+
+        /* --- EDITOR SPECIFIC --- */
+        #view-editor { width: 100%; height: 100%; display: none; } 
+        #editor-scroll { flex: 1; overflow-y: auto; padding: 40px; display: flex; justify-content: center; background: #f1f5f9; }
+        .editor-container { background: white; padding: 20px 30px !important; border-radius: 16px; width: 100%; max-width: 800px !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); height: fit-content; }
+        
+        .meta-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; color: #475569; font-size: 0.9rem; }
+        input[type="text"] { width: 100%; padding: 8px 10px !important; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-family: inherit; font-size: 0.85rem !important; transition: 0.2s; }
+        input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        .part-box { background: #f8fafc; border: 1px solid #e2e8f0;
+            padding: 10px 10px 10px 30px !important; border-radius: 12px; margin-bottom: 10px !important; position: relative; transition: transform 0.2s, box-shadow 0.2s; display: flex;
+            gap: 15px !important; align-items: flex-start; }
+        .part-box.dragging { opacity: 0.5; border: 2px dashed #3b82f6; background: #eff6ff; }
+        .drag-handle { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); cursor: grab; color: #cbd5e1; font-size: 24px; padding: 10px 5px; }
+        .drag-handle:active { cursor: grabbing; color: #334155; }
+        
+        .part-controls { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .control-row { display: flex; gap: 6px; }
+        .part-name { width: 100%; padding: 6px !important; border-radius: 6px;
+            border: 1px solid #cbd5e1; font-weight: 600; color: #334155; font-size: 0.8rem !important; }
+        
+        .preview-container { width: 320px; flex-shrink: 0; }
+        .lyrics-wrapper { position: relative; width: 100%; aspect-ratio: 16 / 9;
+            background: #000000; border-radius: 8px; overflow: hidden; border: 2px solid #334155; }
+        textarea.slide-input { width: 100%; height: 100%; background: transparent; color: white; border: none;
+            padding: 5% 8% !important; font-family: 'Inter', sans-serif; font-size: 12px !important; font-weight: 600; text-align: center; resize: none; line-height: 1.2 !important;
+            outline: none; }
+        
+        .icon-btn { background: white; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; cursor: pointer; color: #475569; font-weight: bold; flex: 1; }
+        .save-section { margin-top: 40px; padding-top: 30px; border-top: 2px dashed #e2e8f0; display: flex; flex-direction: column; gap: 15px; }
+        .status-success { color: #10b981; } .status-error { color: #ef4444; }
+		
+		/* --- NEW: DELETE BUTTON STYLE --- */
+.delete-btn {
+    display: none; 
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* ONLY show the X button if the card has the 'is-local' class */
+.lyric-card.is-local .delete-btn {
+    display: flex;
+}
+		
+		
+
+        #notification-box { display: none; width: auto;
+            min-width: 300px; background: rgba(239, 68, 68, 0.9); border: 1px solid #f87171; border-radius: 12px; padding: 12px 20px; color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: slideDown 0.3s ease-out; z-index: 50; flex-direction: row; align-items: center; justify-content: space-between; gap: 15px;
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%); backdrop-filter: blur(10px);
+        }
+        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        #render-container { position: absolute; top: -9999px; left: -9999px; }
+        .group-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 8px; }
+        .loader { display:none; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- LOGIN STYLES --- */
+        #login-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #F8FAFC; z-index: 9999; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+        }
+
+        @keyframes korPulse {
+            0%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)}
+            50%{transform:scale(1.05);box-shadow:0 0 20px rgba(201,193,182,.55)}
+            100%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)}
+        }
+        .korLogo {
+            width:64px; height:64px; border-radius:18px;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            display:grid; place-items:center;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            border:1px solid rgba(255,255,255,0.8);
+            animation: korPulse 3s ease-in-out infinite;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 2rem; padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%; max-width: 450px; text-align: center;
+        }
+
+        .login-input-group { text-align: left; margin-bottom: 20px; }
+        .login-label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px; }
+        .login-field-container { position: relative; }
+        
+        .styled-input {
+            width: 100%; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 0.75rem; padding: 0.75rem 1rem;
+            font-size: 1rem; font-weight: 500; color: #334155;
+            outline: none; transition: all 0.2s; padding-right: 3rem; 
+        }
+        .styled-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
+
+        .eye-btn {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; color: #94a3b8; padding: 5px;
+        }
+        .eye-btn:hover { color: #64748b; }
+
+        .login-btn-main {
+            width: 100%; background-color: #0f172a; color: white;
+            font-weight: 700; padding: 1rem; border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s; display: block; margin-top: 10px;
+        }
+        .login-btn-main:active { transform: scale(0.98); }
+
+        #loginMsg { min-height: 1.2em; font-size: 0.85rem; font-weight: 600; color: #ef4444; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+    <div id="song-notification-toast"></div>
+
+    <div id="login-overlay">
+        <div class="glass-card">
+            <div class="text-center mb-8">
+                <div class="korLogo">
+                    <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" style="width:40px; height:40px; border-radius:8px;" alt="L" />
+                </div>
+                <h1 style="font-size:1.5rem; font-weight:800; color:#0f172a; margin:0;">Worship Console</h1>
+                <p style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:#94a3b8; font-weight:700; margin-top:5px;">Authorized Personnel Only</p>
+            </div>
+
+            <div class="login-input-group">
+                <label class="login-label">Password</label>
+                <div class="login-field-container">
+                    <input id="passwordInput" type="password" class="styled-input" placeholder="••••••••">
+                    <button type="button" class="eye-btn" onclick="togglePassword()">
+                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path id="eyePath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path id="eyePathOuter" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="loginMsg"></div>
+
+            <button onclick="checkPassword()" class="login-btn-main">Login</button>
+            <p style="margin-top:2rem; font-size:0.65rem; color:#cbd5e1; text-transform:uppercase; letter-spacing:0.1em; font-weight:600;">© KOR Management System</p>
+        </div>
+    </div>
+
+    <div id="top-nav">
+        <div class="app-title">
+            <span style="font-size:1.2rem;">🎵</span> Worship Suite <span style="font-size:0.7rem; background:#e2e8f0; color:#64748b; padding:2px 6px; border-radius:4px;">PRO</span>
+        </div>
+        <div class="mode-switch">
+            <div class="mode-btn active" id="tab-presenter" onclick="switchView('presenter')">📡 Presenter</div>
+            <div class="mode-btn" id="tab-editor" onclick="switchView('editor')">📝 Editor</div>
+            <div class="mode-btn" id="tab-library" onclick="switchView('library')">📚 Library</div>
+        </div>
+    </div>
+
+    <div id="app-container" style="opacity:0; pointer-events:none; transition: opacity 0.5s; display:flex; flex:1; overflow:hidden;">
+
+        <div id="view-presenter">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div style="font-size:0.75rem; font-weight:700; color:#15803d; margin-bottom:5px;">LIVE WORSHIP SONG</div>
+                    <div style="display:flex; gap:5px; margin-bottom:8px;">
+                         <button class="btn success" style="flex:1" onclick="loadLiveSongs()">⚡ Refresh Live</button>
+                    </div>
+                    <div style="border-top:1px dashed #cbd5e1; padding-top:8px;">
+                        <input type="file" id="localMediaInput" multiple accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" style="display:none;" onchange="handleLocalMedia(this)">
+                        <button class="btn" style="width:100%; background:#e0f2fe; color:#0369a1; border-color:#bae6fd;" onclick="document.getElementById('localMediaInput').click()">📁 Add Local Files</button>
+						<button class="btn" style="width:100%; margin-top:5px; background:#ff0000; color:white; border:none;" onclick="addYouTubeLink()">📺 Add YouTube URL</button>
+                    </div>
+                </div>
+                <div id="song-list" class="song-list-container">
+                    </div>
+            </div>
+
+<div id="main-area">
+                <!-- 1. Video/Audio Controls (Direct Child of main-area) -->
+                <div id="video-controls" style="display:none; padding:10px 15px; background:#f1f5f9; border-bottom:1px solid #cbd5e1; gap:10px; align-items:center;">
+                    <div style="font-weight:700; font-size:0.8rem; color:#475569; margin-right:5px;">🎥 PLAYER:</div>
+                    <button class="btn" onclick="controlVideo('play')">▶</button>
+                    <button class="btn" onclick="controlVideo('pause')">⏸</button>
+                    <button class="btn danger" onclick="controlVideo('stop')">⏹</button>
+                    
+                    <input type="range" id="video-seeker" min="0" max="100" step="0.1" value="0" style="flex:1; height:8px;" oninput="controlVideo('seek', this.value)" onmousedown="isSeeking=true" onmouseup="isSeeking=false">
+                    
+                    <span id="video-time-display" style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; color:#334155;">00:00</span>
+                </div>
+
+                <!-- 2. Message Notification Box -->
+                <div id="notification-box">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:1.2rem;">📢</span>
+                        <span id="notif-text">Message</span>
+                    </div>
+                    <button class="btn" style="background:white; color:#dc2626; border:none; padding:6px 12px;" onclick="acknowledgeMessage()">Ack</button>
+                </div>
+
+                <!-- 3. Content Grid -->
+                <div id="lyrics-grid">
+                    <div style="color:#64748b; text-align:center; width:100%; margin-top:50px; font-weight:500;">Select a LIVE song to begin.</div>
+                </div>
+                
+                <!-- 4. Navigation Bar -->
+                <div class="nav-bar">
+                    <button class="btn" onclick="navigatePart(-1)">Previous</button>
+                    <span id="current-song-title" style="font-weight:700; color:var(--accent); font-size:1.1rem;">No Song Selected</span>
+                    <button class="btn" onclick="navigatePart(1)">Next</button>
+                </div>
+            </div>
+
+            <div id="right-pane">
+                <div id="timer">00:00</div>
+                 
+                <div>
+                    <div class="group-label">Alignment</div>
+                    <div class="control-row">
+                        <button class="btn" id="btnAlignLeft" style="flex:1" onclick="setTextAlign('left')">Left</button>
+                        <button class="btn active" id="btnAlignCenter" style="flex:1" onclick="setTextAlign('center')">Center</button>
+                    </div>
+                    
+                    <div class="group-label" style="margin-top:20px;">Size: <span id="size-val">95</span></div>
+                    <input type="range" min="30" max="150" value="95" oninput="updateFontSize(this.value)">
+                    
+                    <div class="group-label" style="margin-top:20px;">Font Family</div>
+                    <select id="fontFamily" onchange="updateFont(this.value)" style="width:100%; padding:10px; border-radius:6px; background:white; color:var(--text-color); border:1px solid var(--border);">
+                <option value="'Inter', sans-serif">Inter (Modern Clean)</option>
+                <option value="'Roboto', sans-serif">Roboto (Android Standard)</option>
+                <option value="'Montserrat', sans-serif">Montserrat (Wide & Bold)</option>
+                <option value="'Poppins', sans-serif">Poppins (Friendly Round)</option>
+                <option value="'Oswald', sans-serif">Oswald (Tall & Condensed)</option>
+                <option value="'Bebas Neue', sans-serif">Bebas Neue (Heavy Impact)</option>
+                <option value="'Playfair Display', serif">Playfair (Elegant Serif)</option>
+                <option value="'JetBrains Mono', monospace">JetBrains (Typewriter)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <div class="group-label" style="margin-top:20px;">Background</div>
+                    <div class="color-grid">
+                        <div class="color-dot active" style="background:#000000;" onclick="setBgColor('black', this)"></div>
+                        <div class="color-dot" style="background:#1e293b;" onclick="setBgColor('#1e293b', this)"></div>
+                        <div class="color-dot" style="background:#2563eb;" onclick="setBgColor('#2563eb', this)"></div>
+                        <div class="color-dot" style="background:#dc2626;" onclick="setBgColor('#dc2626', this)"></div>
+                        <div class="color-dot" style="background:#ffffff; border:1px solid #ccc;" onclick="setBgColor('white', this)"></div>
+                    </div>
+                    
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="uploadBgImage(this)">
+                    <button class="btn" style="width:100%; margin-top:5px;" onclick="document.getElementById('fileInput').click()">🖼️ Upload BG Image</button>
+                    <button class="btn danger" style="width:100%; margin-top:5px; font-size:0.75rem;" onclick="clearBgImage()">Remove Image</button>
+                </div>
+
+                <div style="flex:1"></div>
+
+                <div>
+                    <div class="group-label">Broadcast</div>
+                    <button id="btnLaunch" class="btn" style="width:100%; margin-bottom:10px; background:#e0f2fe; color:#0369a1; border-color:#bae6fd;" onclick="launchAudience()">🚀 Launch Audience View</button>
+                    
+                    <button id="btnBlackout" class="btn" style="width:100%; margin-bottom:15px; background:#0f172a; color:white; padding:12px;" onclick="toggleBlackout()">🔴 SCREEN OFF</button>
+                    <button class="btn danger" style="width:100%" onclick="logout()">🔒 Log Off</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-editor" style="display:none;">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3 style="margin:0 0 10px 0; font-size:1rem; color:#0f172a;">Archive Library</h3>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn" style="flex:1; background:#e2e8f0; color:#334155; border-color:#cbd5e1;" onclick="createNewSong()">➕ New</button>
+                        <button class="btn btn-refresh" style="flex:1; background:#3b82f6; color:white;" onclick="loadEditorSongList()">🔄 Sync Drive</button>
+                    </div>
+                    <div id="editorListLoader" style="display:none; text-align:center; font-size:0.8rem; color:#64748b; margin-top:10px;">Loading Drive...</div>
+                </div>
+                <div id="editor-song-list" class="song-list-container"></div>
+            </div>
+
+            <div id="editor-scroll">
+                <div class="editor-container">
+                    <h1 style="margin-top:0; font-size:1.5rem; color:#0f172a;">Song Editor (Archive)</h1>
+                    
+                    <div class="meta-grid">
+                        <div class="form-group">
+                            <label>Song Title (Filename)</label>
+                            <input type="text" id="edit-title" placeholder="e.g., Jesus Loves You">
+                        </div>
+                        <div class="form-group">
+                            <label>Author / Key</label>
+                            <input type="text" id="edit-author" placeholder="e.g., John 3:16">
+                        </div>
+                    </div>
+
+                    <div id="parts-container"></div>
+
+                    <button class="btn" style="background:#e2e8f0; color:#334155; width:100%; justify-content:center; margin-top:10px;" onclick="addPart()">+ Add New Slide</button>
+
+                    <div class="save-section">
+                        <label>📥Save to G-Storage</label>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <label style="display:flex; align-items:center; gap:8px; color:#64748b; font-size:0.9rem; cursor:pointer;">
+                                <input type="checkbox" id="overwrite" checked> Overwrite if file exists
+                            </label>
+                            <button class="btn" style="background:#10b981; color:white; flex:1; justify-content:center; font-size:1.1rem;" onclick="saveToDrive()">
+                                <span id="btnText">📥Save to G-Storage</span>
+                                <span id="spinner" class="loader">⏳</span>
+                            </button>
+                        </div>
+                        <div id="statusMsg" style="text-align:center; font-weight:600;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="view-library" style="display:none; flex:1; padding:20px; gap:20px; overflow:hidden; background:#f1f5f9;">
+            
+            <div style="flex:1; display:flex; flex-direction:column; background:white; border-radius:12px; border:1px solid var(--border); overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+                <div style="padding:15px; background:#f8fafc; border-bottom:1px solid var(--border); display:flex; flex-direction: column; gap: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-weight:700; color:#334155;">💽 G-Storage</div>
+                        <button class="btn" style="font-size:0.8rem; padding:4px 8px;" onclick="refreshLibraryDrive()">🔄 Refresh</button>
+                    </div>
+                    <input type="text" id="driveSearch" placeholder="🔍 Search Archive..." onkeyup="filterDriveList()" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.85rem;">
+                </div>
+                <div id="lib-drive-list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:5px;">
+                    <div style="padding:20px; text-align:center; color:#94a3b8;">Click Refresh to load Archive</div>
+                </div>
+            </div>
+
+            <div style="width:50px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:20px;">
+                <span style="font-size:1.5rem; color:#cbd5e1;">➡</span>
+            </div>
+
+            <div style="flex:1; display:flex; flex-direction:column; background:white; border-radius:12px; border:1px solid var(--border); overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+                <div style="padding:15px; background:#f0fdf4; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-weight:700; color:#15803d;">🔥 Worship (Live Songs)</div>
+                    <div style="font-size:0.75rem; color:#15803d; font-weight:600;" id="live-count">0 Songs Live</div>
+                </div>
+                <div id="lib-firebase-list" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:5px;">
+                    <div style="padding:20px; text-align:center; color:#94a3b8;">Listening for live data...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="render-container">
+        <canvas id="broadcastCanvas" width="1920" height="1080"></canvas>
+    </div>
+
+    <datalist id="section-types">
+        <option value="Verse 1"><option value="Verse 2"><option value="Verse 3"><option value="Verse 4">
+        <option value="Verse 5"><option value="Verse 6"><option value="Verse 7"><option value="Verse 8"><option value="Verse 9">
+        <option value="Chorus"><option value="Chorus 2"><option value="Chorus 3"><option value="Chorus 4">
+        <option value="Pre-Chorus"><option value="Bridge"><option value="Tag"><option value="Intro"><option value="Outro"><option value="Refrain">
+    </datalist>
+
+    <script>
+        // CONFIGURATION
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybbQfXQjGFcskLmJsbwC-kwQBdd-TjGxgehTRQYhaclrJqWYb-xavp7PXv1PMKqdRH/exec";
+        
+        // --- PASSWORD TOGGLE ---
+        function togglePassword() {
+            const passwordInput = document.getElementById("passwordInput");
+            const eyePath = document.getElementById("eyePath");
+            const eyePathOuter = document.getElementById("eyePathOuter");
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                eyePath.setAttribute("d", "M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88L4.573 4.572m14.854 14.854L14.12 14.121M21.543 12c-1.274 4.057-5.064 7-9.542 7-1.157 0-2.26-.205-3.284-.579l-1.88-1.88m14.707-14.543L19.542 5.01A9.969 9.969 0 0121.543 12zM12 5c4.478 0 8.268 2.943 9.542 7a9.968 9.968 0 01-1.216 2.536L18.464 12.68");
+                eyePathOuter.setAttribute("d", "");
+            } else {
+                passwordInput.type = "password";
+                eyePath.setAttribute("d", "M15 12a3 3 0 11-6 0 3 3 0 016 0z");
+                eyePathOuter.setAttribute("d", "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z");
+            }
+        }
+        
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && document.getElementById('login-overlay').style.display !== 'none') {
+                checkPassword();
+            }
+        });
+
+
+
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, update, onValue, onDisconnect, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA",
+            authDomain: "slidesync-37cd4.firebaseapp.com",
+            databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "slidesync-37cd4",
+            storageBucket: "slidesync-37cd4.firebasestorage.app",
+            messagingSenderId: "996754972458",
+            appId: "1:996754972458:web:7f8be6880c3463ac6a4853",
+            measurementId: "G-GCBS3X7STT"
+        };
+
+        const APP_PASSWORD = "K@R2026";
+        const SESSION_KEY = 'global_song_presenter_session';
+        const SESSION_TIMEOUT = 15 * 60 * 1000;
+        const PREFS_KEY = 'presenter_suite_prefs';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- GLOBAL VARS ---
+        let sessionVersion = Date.now();
+        let currentSongData = null;
+        let currentPartIndex = -1;
+        let isCleanLogout = false;
+        let textSettings = { size: 95, align: 'center', font: 'Inter, sans-serif', color: 'white', bg: 'black', bgImage: null };
+        let isBlackout = true;
+        const canvas = document.getElementById('broadcastCanvas');
+        const ctx = canvas.getContext('2d');
+		
+		
+		// --- MASTER HYBRID AUDIENCE GENERATOR (Updated with GPU Acceleration & Pen Layer) ---
+        const AUDIENCE_TEMPLATE = `
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+	<script src="https://www.youtube.com/iframe_api"><\/script>
+    <meta charset="UTF-8"> 
+    <title>Audience Presentation (Hybrid Vault)</title> 
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"> 
+    <style> 
+        /* --- CORE STYLES --- */ 
+        * { box-sizing: border-box; } 
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; font-family: 'Inter', sans-serif; position: relative; } 
+        
+        /* ANIMATIONS */
+        @keyframes korPulse { 0%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} 50%{transform:scale(1.05);box-shadow:0 0 20px rgba(139, 92, 246,0.3)} 100%{transform:scale(1);box-shadow:0 0 0 rgba(139, 92, 246,0)} } 
+        @keyframes drainHealth { 0% { width: 100%; } 100% { width: 0%; } }
+
+        /* LOGO & OVERLAY */
+        .korLogo { width: 64px; height: 64px; border-radius: 16px; background: #1e293b; display: grid; place-items: center; margin: 0 auto 20px; animation: korPulse 3s ease-in-out infinite; border: 1px solid rgba(255,255,255,0.1); } 
+        .korLogo img { width: 40px; height: 40px; border-radius: 6px; display: block; } 
+        
+        #offline-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.5); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 999; text-align: center;
+        } 
+        
+        .glass-box { 
+            background: rgba(30, 41, 59, 0.85); padding: 40px; border-radius: 24px; 
+            border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+            max-width: 400px; width: 90%; display: flex; flex-direction: column; align-items: center; 
+        } 
+        
+        .health-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px; margin-top: 24px; overflow: hidden; position: relative; } 
+        .health-bar-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981); width: 100%; border-radius: 999px; animation: drainHealth 10s linear infinite; } 
+
+        /* CONTAINER & LAYERS */
+        #container { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; overflow: hidden; } 
+        
+        /* BLACK DROP (Hides SMPTE when Online) */
+        #slide-backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 4; transition: opacity 0.5s ease-in-out; opacity: 1; }
+        
+        /* SMPTE BARS (Z-Index 1) */
+        .smpte-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; z-index: 1; pointer-events: none; }
+        .top-bars { height: 67%; display: flex; width: 100%; } .middle-bars { height: 8%; display: flex; width: 100%; } .bottom-bars { height: 25%; display: flex; width: 100%; }
+        .bar, .m-bar { flex: 1; height: 100%; }
+        
+        /* COLORS */
+        .c-gray { background: #c0c0c0; } .c-yellow { background: #bfbf00; } .c-cyan { background: #00bfbf; } .c-green { background: #00bf00; } .c-magenta { background: #bf00bf; } .c-red { background: #bf0000; } .c-blue { background: #0000bf; } .c-black { background: #131313; }
+        .b-navy { background: #00214c; width: 18.3%; } .b-white { background: #ffffff; width: 18.3%; } .b-purple { background: #32006a; width: 18.3%; } .b-black { background: #131313; width: 45.1%; }
+        
+        .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1)); background-size: 100% 4px; z-index: 2; pointer-events: none; }
+
+        /* --- 🚀 GPU HARDWARE ACCELERATION --- */
+        .gpu-accelerated {
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+
+        /* SLIDE, VIDEO & PEN LAYERS */
+        .slide-layer { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; z-index: 5; opacity: 0; transition: opacity 0.5s ease-in-out; } 
+        .slide-visible { opacity: 1; z-index: 6; }
+        #video-layer { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 7; display: none; background: black; }
+        #pen-layer { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 8; pointer-events: none; }
+
+        /* MODES */
+        #container.offline-mode #slide-backdrop { opacity: 0; }
+        #container.offline-mode .slide-layer { opacity: 0 !important; }
+        #container.offline-mode #video-layer { display: none !important; }
+
+        /* --- FULLSCREEN BUTTON STYLES --- */
+        #fs-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 2000; /* Above everything */
+            background: rgba(30, 41, 59, 0.6); /* Glassy background */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px;
+            color: white;
+            cursor: pointer;
+            opacity: 0; /* Hidden by default */
+            transform: translateY(10px); /* Slide up effect */
+            transition: opacity 0.4s ease, transform 0.4s ease, background 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none; /* Disable clicks when hidden */
+        }
+        
+        #fs-toggle.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto; /* Enable clicks when visible */
+        }
+
+        #fs-toggle:hover {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+    </style> 
+</head> 
+<body> 
+ 
+    <div id="offline-overlay"> 
+        <div class="glass-box"> 
+            <div class="korLogo"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="K" /></div> 
+            <h1 style="color:#e5e7eb; margin:0; font-size:1.5rem;">Please Wait...</h1> 
+            <p style="color:#9ca3af; margin-top:8px;">The presentation will begin shortly.</p> 
+            <div class="health-bar-container"><div class="health-bar-fill"></div></div> 
+        </div> 
+    </div> 
+ 
+    <div id="container" class="offline-mode">
+        <div class="smpte-layer">
+            <div class="top-bars"><div class="bar c-gray"></div><div class="bar c-yellow"></div><div class="bar c-cyan"></div><div class="bar c-green"></div><div class="bar c-magenta"></div><div class="bar c-red"></div><div class="bar c-blue"></div></div>
+            <div class="middle-bars"><div class="m-bar c-blue"></div><div class="m-bar c-black"></div><div class="m-bar c-magenta"></div><div class="m-bar c-black"></div><div class="m-bar c-cyan"></div><div class="m-bar c-black"></div><div class="m-bar c-gray"></div></div>
+            <div class="bottom-bars"><div class="b-navy"></div><div class="b-white"></div><div class="b-purple"></div><div class="b-black"></div></div>
+        </div>
+        <div class="scanlines"></div>
+
+        <div id="slide-backdrop"></div>
+
+        <video id="video-layer" class="gpu-accelerated" loop playsinline></video>
+		<div id="youtube-layer" class="gpu-accelerated" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:7; display:none; pointer-events:none;"></div>
+        <img id="slide-A" class="slide-layer gpu-accelerated" src=""> 
+        <img id="slide-B" class="slide-layer gpu-accelerated" src=""> 
+        <canvas id="pen-layer" class="gpu-accelerated" width="1920" height="1080"></canvas>
+    </div> 
+
+    <button id="fs-toggle" title="Toggle Fullscreen">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+    </button>
+ 
+ 
+
+<script> 
+        // --- 1. YOUTUBE API SETUP ---
+        var player;
+        var youtubeReady = false;
+        
+        // This function is called automatically by the YouTube API once it loads
+        window.onYouTubeIframeAPIReady = function() {
+            player = new YT.Player('youtube-layer', {
+                height: '100%',
+                width: '100%',
+                videoId: '',
+                playerVars: { 
+                    'playsinline': 1, 
+                    'controls': 0, // We hide their controls to use ours
+                    'rel': 0, 
+                    'fs': 0, 
+                    'disablekb': 1, 
+                    'modestbranding': 1 
+                },
+                events: { 'onReady': onPlayerReady }
+            });
+        };
+
+        function onPlayerReady(event) { 
+            youtubeReady = true; 
+            console.log("YT Player API Ready");
+        }
+
+        let activeLayer = 'A';
+        
+        // --- 2. UPDATED DISPLAY LOGIC ---
+        window.updateDisplay = function(type, src) {
+            const container = document.getElementById('container');
+            const overlay = document.getElementById('offline-overlay');
+            const vid = document.getElementById('video-layer');
+            const ytLayer = document.getElementById('youtube-layer');
+            const imgA = document.getElementById('slide-A');
+            const imgB = document.getElementById('slide-B');
+
+            // RESET LAYERS (Hide what isn't being used)
+            if(type !== 'youtube') { 
+                ytLayer.style.display = 'none'; 
+                if(player && player.stopVideo && youtubeReady) player.stopVideo(); 
+            }
+            if(type !== 'video') { 
+                vid.style.display = 'none'; 
+                vid.pause(); 
+            }
+
+            // HANDLE OFFLINE
+            if (type === 'offline') {
+                container.classList.add('offline-mode');
+                overlay.style.display = 'flex';
+                return;
+            }
+
+            container.classList.remove('offline-mode');
+            overlay.style.display = 'none';
+
+            // HANDLE YOUTUBE
+            if (type === 'youtube') {
+                imgA.classList.remove('slide-visible');
+                imgB.classList.remove('slide-visible');
+                ytLayer.style.display = 'block';
+                
+                if(youtubeReady && player && player.loadVideoById) {
+                    player.loadVideoById(src); // src here is the Video ID
+                    player.playVideo();
+                }
+            }
+            // HANDLE LOCAL VIDEO
+            else if (type === 'video') {
+                imgA.classList.remove('slide-visible');
+                imgB.classList.remove('slide-visible');
+                vid.style.display = 'block';
+                vid.src = src;
+                vid.play().catch(e => console.error("Autoplay blocked", e));
+            } 
+            // HANDLE IMAGES
+            else if (type === 'image') {
+                const hiddenLayer = activeLayer === 'A' ? 'B' : 'A';
+                const hiddenImg = document.getElementById('slide-' + hiddenLayer);
+                const activeImg = document.getElementById('slide-' + activeLayer);
+                
+                if (activeImg.src === src && activeImg.classList.contains('slide-visible')) return;
+
+                hiddenImg.src = src;
+                hiddenImg.onload = () => {
+                    hiddenImg.classList.add('slide-visible');
+                    activeImg.classList.remove('slide-visible');
+                    activeLayer = hiddenLayer;
+                };
+            }
+        };
+        
+        // --- 3. UNIVERSAL MEDIA CONTROLLER (Handles both Local & YouTube) ---
+        window.videoControl = function(action, value) {
+            const ytLayer = document.getElementById('youtube-layer');
+            const isYouTube = ytLayer.style.display !== 'none';
+            const vid = document.getElementById('video-layer');
+
+            try {
+                // If YouTube is active, control the IFrame Player
+                if (isYouTube && player && youtubeReady) {
+                    if (action === 'play') player.playVideo();
+                    if (action === 'pause') player.pauseVideo();
+                    if (action === 'stop') player.stopVideo();
+                    if (action === 'seek') player.seekTo(value);
+                    if (action === 'volume') player.setVolume(value * 100); 
+                    
+                    // Return status object for the slider sync
+                    return { 
+                        time: player.getCurrentTime(), 
+                        duration: player.getDuration(), 
+                        paused: (player.getPlayerState() !== 1) 
+                    };
+                } 
+                // Otherwise, control the HTML5 Video Tag
+                else {
+                    if (!vid) return;
+                    if (action === 'play') vid.play();
+                    if (action === 'pause') vid.pause();
+                    if (action === 'stop') { vid.pause(); vid.currentTime = 0; }
+                    if (action === 'seek') vid.currentTime = value;
+                    if (action === 'volume') vid.volume = value;
+
+                    return { 
+                        time: vid.currentTime, 
+                        duration: vid.duration, 
+                        paused: vid.paused 
+                    };
+                }
+            } catch(e) { console.error("Control Error", e); }
+        };
+
+        // --- 4. FULLSCREEN & UI LOGIC (Unchanged) ---
+        const fsBtn = document.getElementById('fs-toggle');
+        let idleTimer;
+
+        function showUI() {
+            fsBtn.classList.add('visible');
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                fsBtn.classList.remove('visible');
+            }, 3000);
+        }
+
+        fsBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => {
+                    console.log(\`Error attempting to enable fullscreen: \${e.message}\`);
+                });
+            } else {
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+            }
+        });
+
+        window.addEventListener('mousemove', showUI);
+        window.addEventListener('touchstart', showUI);
+        window.addEventListener('click', showUI);
+        showUI();
+    <\/script>
+</body> 
+</html>
+`;
+
+
+        let audienceWindow = null;
+
+        // --- UPDATED LAUNCH LOGIC (Prevent Ghosting + Grey Out + Sync Fix) ---
+        window.launchAudience = function() {
+            const btn = document.getElementById('btnLaunch');
+            
+            if (audienceWindow && !audienceWindow.closed) {
+                audienceWindow.focus();
+                return;
+            }
+
+            alert("📢 AUDIENCE VIEW INSTRUCTIONS:\n\n1. The new window will open.\n2. Enable Fullscreen by pressing 'F11' or 'Ctrl + Alt + V'.\n3. Drag the window to your second monitor if needed.\n4. If prompt 'manage windows on all your display' please click 'Allow'.\n5. To Exit Full Screen-press the same keys.");
+            
+            const options = "width=1920,height=1080";
+            audienceWindow = window.open("", "AudienceWindow", options);
+            
+            if (!audienceWindow) {
+                alert("⚠️ Popup Blocked! Please allow popups for this site.");
+                return;
+            }
+
+            // 2. Write Template
+            audienceWindow.document.write(AUDIENCE_TEMPLATE);
+
+            // 3. Grey Out Button & Start Watchdog
+            btn.disabled = true;
+            btn.innerHTML = "🚀 Audience Active (Running)";
+            
+            const checkTimer = setInterval(() => {
+                if(!audienceWindow || audienceWindow.closed) {
+                    clearInterval(checkTimer);
+                    audienceWindow = null;
+                    btn.disabled = false;
+                    btn.innerHTML = "🚀 Launch Audience View";
+                }
+            }, 1000);
+
+            // 4. FIX: SYNC INITIAL STATE (Blackout or Current Frame)
+            setTimeout(() => {
+                if (audienceWindow && !audienceWindow.closed) {
+                    if (isBlackout) {
+                        audienceWindow.updateDisplay('offline');
+                    } else {
+                        // Force Push Current Local Canvas
+                        const currentDataURL = canvas.toDataURL('image/jpeg', 0.8);
+                        audienceWindow.updateDisplay('image', currentDataURL);
+                    }
+                }
+            }, 800); // 800ms delay to ensure window DOM is fully ready
+        };
+
+		
+		
+
+        // --- HYBRID DATA STORES ---
+        let liveSongsState = {};    // Stores Firebase songs
+        let driveImagesState = [];  // Stores Drive images
+		let localMediaState = [];   // <--- NEW: Persistent Local "Folder"
+
+        // --- EXPOSE FOR HTML ---
+        window.switchView = function(mode) {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + mode).classList.add('active');
+            
+            document.getElementById('view-presenter').style.display = 'none';
+            document.getElementById('view-editor').style.display = 'none';
+            document.getElementById('view-library').style.display = 'none';
+            if(mode === 'presenter') {
+                document.getElementById('view-presenter').style.display = 'flex';
+                // Note: Presenter list is now auto-managed by Hybrid Listener
+            } else if (mode === 'editor') {
+                document.getElementById('view-editor').style.display = 'flex';
+                // Only load if empty to save bandwidth
+                if(document.getElementById('editor-song-list').children.length === 0) loadEditorSongList();
+            } else if (mode === 'library') {
+                document.getElementById('view-library').style.display = 'flex';
+                refreshLibraryDrive();
+                // Firebase list is auto-managed by listener
+            }
+        }
+
+        // ==========================================
+        // 1. PRESENTER LOGIC (HYBRID FIREBASE + DRIVE)
+        // ==========================================
+        
+        // Listener for Live Songs (Firebase)
+        const liveSongsRef = ref(db, 'live_library');
+        onValue(liveSongsRef, (snapshot) => {
+            // Update Global Store
+            liveSongsState = snapshot.exists() ? snapshot.val() : {};
+            
+            // 1. Update Library List (Firebase Column)
+            const libList = document.getElementById('lib-firebase-list');
+            const countEl = document.getElementById('live-count');
+            libList.innerHTML = '';
+            
+            let count = Object.keys(liveSongsState).length;
+            if(count > 0) {
+                 const keys = Object.keys(liveSongsState);
+                 keys.forEach(key => {
+                     const song = liveSongsState[key];
+                     const libDiv = document.createElement('div');
+                     libDiv.style = "padding:10px; border:1px solid #e2e8f0; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; background:white;";
+                     libDiv.innerHTML = `
+                        <span style="font-weight:600; color:#334155;">${song.title}</span>
+                        <button class="btn danger" style="padding:4px 8px; font-size:0.75rem;" onclick="unpublishSong('${key}')">Unpublish 🗑️</button>
+                    `;
+                     libList.appendChild(libDiv);
+                 });
+                 if(countEl) countEl.innerText = count + " Songs Live";
+            } else {
+                 libList.innerHTML = '<div style="padding:20px; text-align:center; color:#94a3b8;">Live Environment Empty</div>';
+                 if(countEl) countEl.innerText = "0 Songs Live";
+            }
+
+            // 2. Trigger Hybrid Sidebar Render
+            renderHybridSidebar();
+        });
+
+        // Fetcher for Drive Images (Hybrid)
+        window.fetchDriveImages = async () => {
+            try {
+                // Reuse existing App Script logic
+                const res = await fetch(APPS_SCRIPT_URL + "?action=list&t=" + Date.now());
+                const data = await res.json();
+                
+                if(data.files) {
+                    // Filter for Images Only
+                    driveImagesState = data.files.filter(f => f.name.match(/\.(jpg|jpeg|png|mp4|webm)$/i));
+                    // Update Sidebar
+                    renderHybridSidebar();
+                }
+            } catch(e) {
+                console.error("Failed to fetch hybrid drive images", e);
+            }
+        }
+
+
+function renderHybridSidebar() {
+    const list = document.getElementById('song-list');
+    list.innerHTML = ''; 
+
+    // --- 0. NEW: RENDER LOCAL MEDIA FOLDER ---
+    if (typeof localMediaState !== 'undefined' && localMediaState.length > 0) {
+        const localDiv = document.createElement('div');
+        localDiv.className = 'song-item';
+        localDiv.style.borderLeft = "3px solid #f59e0b"; // Amber border
+        localDiv.style.background = "#fffbeb"; // Light amber bg
+        localDiv.innerHTML = `
+            <span style="font-size:1.1rem; margin-right:8px;">📂</span> 
+            <span style="flex:1; font-weight:700; color:#b45309;">Local Gallery (${localMediaState.length})</span>
+        `;
+        // Ensure openLocalMediaGallery is defined in your script
+        localDiv.onclick = () => openLocalMediaGallery(localDiv);
+        list.appendChild(localDiv);
+
+        // Visual Divider
+        const div = document.createElement('div');
+        div.style = "border-bottom: 1px dashed #cbd5e1; margin: 5px 0;";
+        list.appendChild(div);
+    }
+
+    // --- 1. RENDER CLOUD MEDIA FIRST ---
+    if (driveImagesState.length > 0) {
+        const divider = document.createElement('div');
+        divider.style = "padding:8px; font-size:0.65rem; font-weight:800; color:#94a3b8; text-transform:uppercase; display:flex; align-items:center;";
+        divider.innerText = "🖼️ Cloud Media";
+        list.appendChild(divider);
+
+        driveImagesState.forEach(file => {
+            const div = document.createElement('div');
+            div.className = 'song-item';
+            div.style.borderLeft = "3px solid #8b5cf6"; 
+            div.style.background = "#f8fafc";
+            div.innerHTML = `
+                <span style="font-size:1.1rem; margin-right:8px;">📷</span> 
+                <span style="flex:1; font-weight:600; color:#475569; overflow:hidden; text-overflow:ellipsis;">${file.name}</span>
+            `;
+            div.onclick = () => loadDriveImageToCanvas(file.id, file.name, div);
+            list.appendChild(div);
+        });
+
+        // Add a small visual divider before songs start
+        const songDivider = document.createElement('div');
+        songDivider.style = "border-left: 1px dashed #cbd5e1; margin: 0 5px;";
+        list.appendChild(songDivider);
+    }
+
+    // --- 2. RENDER LIVE SONGS SECOND ---
+    if (Object.keys(liveSongsState).length > 0) {
+        const sortedKeys = Object.keys(liveSongsState).sort((a,b) => {
+            const orderA = (liveSongsState[a].order !== undefined) ? liveSongsState[a].order : 9999;
+            const orderB = (liveSongsState[b].order !== undefined) ? liveSongsState[b].order : 9999;
+            if (orderA === orderB) return liveSongsState[a].title.localeCompare(liveSongsState[b].title);
+            return orderA - orderB;
+        });
+
+        sortedKeys.forEach(key => {
+            const song = liveSongsState[key];
+            const div = document.createElement('div');
+            div.className = 'song-item';
+            div.dataset.key = key; 
+            div.innerHTML = `
+                <span class="live-drag-handle" style="cursor:grab; color:#cbd5e1; font-size:1.1rem; margin-right:8px;">☰</span>
+                <div style="flex:1; overflow:hidden; text-overflow: ellipsis;">
+                     <span style="color:#15803d; font-weight:bold; margin-right:4px;">🎶</span> ${song.title}
+                </div>`;
+            
+            div.onclick = (e) => {
+                if(e.target.classList.contains('live-drag-handle')) return;
+                loadLiveSongFromMemory(song, div);
+            };
+
+            addLiveDragEvents(div);
+            list.appendChild(div);
+        });
+    } 
+    // --- 3. UPDATED EMPTY CHECK (Checks Local, Drive, AND Live) ---
+    else if (driveImagesState.length === 0 && (!localMediaState || localMediaState.length === 0)) {
+        // Only show "Empty" message if EVERYTHING is empty
+        const empty = document.createElement('div');
+        empty.style = "padding:15px; text-align:center; color:#94a3b8; font-size:0.75rem; font-weight:600; width: 100%; white-space: normal;";
+        empty.innerHTML = "No Live Content Available.";
+        list.appendChild(empty);
+    }
+}
+
+
+
+
+
+        // --- NEW: LOAD DRIVE IMAGE WITH PERMANENT CACHING ---
+// --- UPDATED: DOWNLOAD TO TEMP FOLDER STRATEGY ---
+async function loadDriveImageToCanvas(id, name, itemElement) {
+    // UI Selection
+    document.querySelectorAll('#song-list .song-item').forEach(i => i.classList.remove('active'));
+    if(itemElement) itemElement.classList.add('active');
+    
+    // Check Cache first
+    const cacheKey = "media_cache_" + id;
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+        showNotification("Loaded from Cache ⚡");
+        processImageData(cachedData, name);
+        return;
+    }
+
+    showNotification("Downloading via Cloud Bridge... ☁️");
+
+    try {
+        // We use the Apps Script as a proxy to bypass CORS/403 errors
+        const proxyUrl = `${APPS_SCRIPT_URL}?action=getContent&id=${id}`;
+        const res = await fetch(proxyUrl);
+        const json = await res.json();
+
+        if (json.ok && json.data) {
+            let mediaData = json.data;
+            const isVideo = name.match(/\.(mp4|webm|mov)$/i);
+
+            // If it's an image, ensure Base64 header is present
+            if (!isVideo && !mediaData.startsWith('data:image')) {
+                mediaData = "data:image/jpeg;base64," + mediaData;
+            } 
+            // If it's a video, ensure Base64 header is present
+            else if (isVideo && !mediaData.startsWith('data:video')) {
+                mediaData = "data:video/mp4;base64," + mediaData;
+            }
+
+            // Save to Cache if it's not a massive video
+            if (mediaData.length < 5000000) { 
+                try { localStorage.setItem(cacheKey, mediaData); } catch(e) { console.warn("Cache Full"); }
+            }
+
+            // If it's a video, we add it to the Local Folder for better playback
+            if (isVideo) {
+                window.localMediaState.push({
+                    name: "☁️ " + name,
+                    type: 'video_local',
+                    src: mediaData,
+                    filename: name
+                });
+                renderHybridSidebar();
+                openLocalMediaGallery();
+                showNotification("Video Ready in Gallery 📂");
+            } else {
+                processImageData(mediaData, name);
+                showNotification("Image Downloaded! 🖼️");
+            }
+
+        } else {
+            throw new Error(json.error || "File unreachable");
+        }
+    } catch (e) {
+        console.error("Download Error:", e);
+        alert("Google Drive Access Denied.\n\nEnsure your Apps Script is deployed as 'Anyone' and the file is shared correctly.");
+        showNotification("Download Failed ❌");
+    }
+}
+
+            // --- EXISTING IMAGE LOGIC (Base64) ---
+            const cacheKey = "media_cache_" + id;
+            const cachedData = localStorage.getItem(cacheKey);
+
+            if (cachedData) {
+                console.log("🚀 Loading from Local Cache:", name);
+                processImageData(cachedData, name);
+                showNotification("Loaded from Cache ⚡");
+                return;
+            }
+
+            showNotification("Downloading Image...");
+            try {
+                const res = await fetch(APPS_SCRIPT_URL + "?action=getContent&id=" + id);
+                const json = await res.json();
+
+                if(json.ok && json.data) {
+                    let base64 = json.data;
+                    if(!base64.startsWith('data:image')) {
+                        base64 = "data:image/jpeg;base64," + base64;
+                    }
+                    try { localStorage.setItem(cacheKey, base64); } catch (e) {}
+                    processImageData(base64, name);
+                    showNotification("Image Downloaded 🖼️");
+                } else {
+                    throw new Error("Invalid Data");
+                }
+            } catch(e) {
+                alert("Error loading image. Check console.");
+            }
+        }
+
+            // Helper to keep code clean and reusable
+        function processImageData(base64, name) {
+            // DETECT TYPE BASED ON EXTENSION
+            const isVideo = name.match(/\.(mp4|webm)$/i);
+            
+            currentSongData = {
+                type: isVideo ? 'video_local' : 'image_local', // <--- Auto-detect type
+                name: name,
+                src: base64,
+                parts: [{ 
+                    name: isVideo ? 'CLOUD VIDEO' : 'CLOUD IMAGE', 
+                    lyrics: isVideo ? 'Video Loading...' : 'Projected from Google Drive' 
+                }]
+            };
+            document.getElementById('current-song-title').innerText = name;
+            renderLyricsGrid();
+        }
+
+        // --- NEW: LIVE DRAG & DROP LOGIC ---
+        let draggedLiveItem = null;
+        function addLiveDragEvents(item) {
+            item.draggable = false;
+            const handle = item.querySelector('.live-drag-handle');
+            handle.addEventListener('mousedown', () => { item.draggable = true; });
+            handle.addEventListener('mouseup', () => { item.draggable = false; });
+            item.addEventListener('dragstart', function(e) { 
+                draggedLiveItem = item; 
+                setTimeout(() => item.classList.add('dragging'), 0); 
+            });
+            item.addEventListener('dragend', function() { 
+                setTimeout(() => item.classList.remove('dragging'), 0); 
+                draggedLiveItem = null; 
+                item.draggable = false; 
+                saveLiveOrder(); // TRIGGER SAVE ON DROP
+            });
+        }
+
+        const liveListContainer = document.getElementById('song-list');
+        liveListContainer.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            const afterElement = getLiveDragAfterElement(liveListContainer, e.clientY);
+            if (draggedLiveItem) {
+                if (afterElement == null) liveListContainer.appendChild(draggedLiveItem);
+                else liveListContainer.insertBefore(draggedLiveItem, afterElement);
+            }
+        });
+
+        function getLiveDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.song-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                else return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function saveLiveOrder() {
+            const items = document.querySelectorAll('#song-list .song-item');
+            const updates = {};
+            
+            items.forEach((item, index) => {
+                const key = item.dataset.key;
+                if(key) {
+                    updates['live_library/' + key + '/order'] = index;
+                }
+            });
+            // Batch update to Firebase
+            update(ref(db), updates).then(() => {
+                showNotification("Order Updated 🔄");
+            }).catch(e => console.error(e));
+        }
+
+        // Instant Load (No fetch!)
+        window.loadLiveSongFromMemory = (songData, el) => {
+            document.querySelectorAll('#song-list .song-item').forEach(i => i.classList.remove('active'));
+            if(el) el.classList.add('active');
+            
+            document.getElementById('current-song-title').innerText = songData.title;
+            
+            // Format data to match internal engine
+            currentSongData = {
+                type: 'song',
+                name: songData.title,
+                parts: songData.parts || []
+            };
+            
+            renderLyricsGrid();
+            showNotification("Song Loaded ⚡");
+        }
+
+        window.loadLiveSongs = () => {
+            showNotification("Syncing Live List...");
+            fetchDriveImages(); // Also refresh images manually if needed
+        }
+
+        // ==========================================
+        // 2. LIBRARY LOGIC (THE BRIDGE)
+        // ==========================================
+
+        // --- NEW: SEARCH FILTER ---
+        window.filterDriveList = () => {
+            const term = document.getElementById('driveSearch').value.toLowerCase();
+            const items = document.querySelectorAll('#lib-drive-list > div');
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                // Simple toggle logic
+                if (text.includes(term)) item.style.display = 'flex';
+                else item.style.display = 'none';
+            });
+        }
+
+        window.refreshLibraryDrive = async () => {
+            const driveList = document.getElementById('lib-drive-list');
+            driveList.innerHTML = '<div class="loader" style="display:block; margin:20px auto;"></div>';
+            
+            try {
+                const res = await fetch(APPS_SCRIPT_URL + "?action=list&t=" + Date.now());
+                const data = await res.json();
+                
+                driveList.innerHTML = '';
+                if(data.files) {
+                    data.files.forEach(f => {
+                        if(f.name === "setlist.json") return;
+                        if(f.name.match(/\.(mp4|webm|jpg|jpeg|png|webp|gif)$/i)) return; // Filter media
+
+                        const div = document.createElement('div');
+                        div.style = "padding:10px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;";
+                        div.innerHTML = `
+                            <span style="font-weight:500;">${f.name}</span> 
+                            <button class="btn" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.75rem; padding:6px 10px;" onclick="publishToLive('${f.id}', '${f.name}')">
+                                Publish ➡
+                            </button>`;
+                        driveList.appendChild(div);
+                    });
+                }
+            } catch(e) {
+                driveList.innerHTML = '<div style="color:red; padding:20px;">Error loading Archive.</div>';
+            }
+        }
+
+        window.publishToLive = async (id, name) => {
+            showNotification("Fetching from Archive...");
+            try {
+                // 1. Get content from Drive
+                const res = await fetch(APPS_SCRIPT_URL + "?action=getContent&id=" + id);
+                const json = await res.json();
+                
+                if(json.ok && json.data) {
+                    const songData = json.data;
+                    // 2. Sanitize key
+                    const safeKey = name.replace(/[.#$/[\]]/g, "_");
+                    // 3. Add default order (append to end)
+                    songData.order = Date.now();
+                    // 4. Push to Firebase
+                    await set(ref(db, 'live_library/' + safeKey), songData);
+                    showNotification("✅ Published: " + name);
+                }
+            } catch(e) {
+                alert("Failed to publish: " + e.message);
+            }
+        }
+
+        window.unpublishSong = (key) => {
+            if(confirm("Remove this song from the Live Environment? (It remains in Drive Archive)")) {
+                remove(ref(db, 'live_library/' + key));
+            }
+        }
+
+
+        // ==========================================
+        // 3. EDITOR LOGIC (ARCHIVE ONLY)
+        // ==========================================
+        
+        window.createNewSong = () => {
+            document.getElementById('edit-title').value = "";
+            document.getElementById('edit-author').value = "";
+            document.getElementById('overwrite').checked = false;
+            document.getElementById('parts-container').innerHTML = '';
+            document.getElementById('statusMsg').innerText = "";
+            document.querySelectorAll('#editor-song-list .song-item').forEach(i => i.classList.remove('active'));
+            addPart();
+        }
+
+        window.loadEditorSongList = async () => {
+            const loader = document.getElementById('editorListLoader');
+            const listContainer = document.getElementById('editor-song-list');
+            loader.style.display = 'block'; listContainer.innerHTML = '';
+            try {
+                const res = await fetch(APPS_SCRIPT_URL + "?action=list&t=" + Date.now());
+                const data = await res.json();
+                if (data.ok && data.files) {
+                    data.files.forEach(file => {
+                        if (file.name === "setlist.json") return;
+                        if (file.name.match(/\.(mp4|webm|jpg|jpeg|png|webp|gif)$/i)) return;
+
+                        const div = document.createElement('div');
+                        div.className = 'song-item'; div.innerText = file.name;
+                        div.onclick = () => loadSongIntoEditor(file.id, div);
+                        listContainer.appendChild(div);
+                    });
+                }
+            } catch (error) { listContainer.innerHTML = '<div style="padding:10px; color:red;">Failed to load list.</div>';
+            }
+            loader.style.display = 'none';
+        }
+
+        async function loadSongIntoEditor(fileId, itemElement) {
+            document.querySelectorAll('#editor-song-list .song-item').forEach(el => el.classList.remove('active'));
+            if(itemElement) itemElement.classList.add('active');
+            document.getElementById('edit-title').value = "Loading...";
+            try {
+                const res = await fetch(APPS_SCRIPT_URL + "?action=getContent&id=" + fileId);
+                const json = await res.json();
+                if (json.ok && json.data) populateEditor(json.data);
+            } catch (error) { alert("Error loading song data.");
+            }
+        }
+
+        function populateEditor(data) {
+            document.getElementById('edit-title').value = data.title || "";
+            document.getElementById('edit-author').value = data.author || "";
+            document.getElementById('overwrite').checked = true;
+            document.getElementById('parts-container').innerHTML = '';
+            if (data.parts && data.parts.length > 0) data.parts.forEach(part => addPart(part.name, part.lyrics));
+            else addPart();
+        }
+
+        // --- EDITOR UI HELPERS (Drag/Drop/Add) ---
+        function createPartElement(nameValue = "", lyricsValue = "") {
+            const div = document.createElement('div');
+            div.className = 'part-box';
+            div.innerHTML = `
+                <div class="drag-handle" title="Drag to reorder">☰</div>
+                <div class="part-controls">
+                    <input type="text" class="part-name" list="section-types" placeholder="Section (e.g. Verse 1)" value="${nameValue}">
+                    <div class="control-row">
+                        <button class="icon-btn" onclick="moveUp(this)" title="Move Up">👆</button>
+                        <button class="icon-btn" onclick="moveDown(this)" title="Move Down">👇</button>
+                        <button class="icon-btn" style="color:#059669;" onclick="duplicatePart(this)" title="Duplicate">📑</button>
+                        <button class="icon-btn" style="color:#ef4444;" onclick="this.closest('.part-box').remove()">X</button>
+                    </div>
+                </div>
+                <div class="preview-container"><div class="lyrics-wrapper"><textarea class="part-lyrics slide-input" placeholder="Type lyrics here...">${lyricsValue}</textarea></div></div>`;
+            addDragEvents(div);
+            return div;
+        }
+
+        window.addPart = function(nameValue = "", lyricsValue = "") {
+            document.getElementById('parts-container').appendChild(createPartElement(nameValue, lyricsValue));
+        }
+
+        window.duplicatePart = function(btn) {
+            const originalBox = btn.closest('.part-box');
+            const newBox = createPartElement(originalBox.querySelector('.part-name').value, originalBox.querySelector('.part-lyrics').value);
+            if (originalBox.nextElementSibling) originalBox.parentNode.insertBefore(newBox, originalBox.nextElementSibling);
+            else originalBox.parentNode.appendChild(newBox);
+        }
+
+        window.moveUp = function(btn) {
+            const box = btn.closest('.part-box');
+            if (box.previousElementSibling) box.parentNode.insertBefore(box, box.previousElementSibling);
+        }
+
+        window.moveDown = function(btn) {
+            const box = btn.closest('.part-box');
+            if (box.nextElementSibling) box.parentNode.insertBefore(box.nextElementSibling, box);
+        }
+
+        let draggedItem = null;
+        function addDragEvents(item) {
+            item.draggable = false;
+            const handle = item.querySelector('.drag-handle');
+            handle.addEventListener('mousedown', () => { item.draggable = true; });
+            handle.addEventListener('mouseup', () => { item.draggable = false; });
+            item.addEventListener('dragstart', function(e) { draggedItem = item; setTimeout(() => item.classList.add('dragging'), 0); });
+            item.addEventListener('dragend', function() { setTimeout(() => item.classList.remove('dragging'), 0); draggedItem = null; item.draggable = false; });
+        }
+
+        const container = document.getElementById('parts-container');
+        container.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(container, e.clientY);
+            if (draggedItem) {
+                if (afterElement == null) container.appendChild(draggedItem);
+                else container.insertBefore(draggedItem, afterElement);
+            }
+        });
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.part-box:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                else return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // --- SAVE TO DRIVE (ARCHIVE) ---
+        window.saveToDrive = async function() {
+            const title = document.getElementById('edit-title').value.trim();
+            const author = document.getElementById('edit-author').value.trim();
+            const overwrite = document.getElementById('overwrite').checked;
+            const msg = document.getElementById('statusMsg');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('spinner');
+            if (!title) { msg.innerText = "⚠️ Please enter a Song Title"; msg.className = "status-error"; return;
+            }
+
+            const parts = [];
+            document.querySelectorAll('.part-box').forEach(box => {
+                parts.push({ name: box.querySelector('.part-name').value || "Slide", lyrics: box.querySelector('.part-lyrics').value });
+            });
+            const payload = { action: "save", name: title, overwrite: overwrite, data: { title, author, parts } };
+            btnText.innerText = "Archiving...";
+            spinner.style.display = "inline-block"; msg.innerText = "";
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                if (result.ok) { 
+                    btnText.innerText = "📥Save to G-Storage";
+                    msg.innerText = "✅ Archived to Drive!"; 
+                    msg.className = "status-success"; 
+                    loadEditorSongList();
+                }
+                else throw new Error(result.error || "Unknown error");
+            } catch (error) { btnText.innerText = "📥Save to G-Storage"; msg.innerText = "❌ Error: " + error.message; msg.className = "status-error";
+            }
+            spinner.style.display = "none";
+        }
+
+        // ==========================================
+        // 4. SHARED UTILS & BROADCAST ENGINE
+        // ==========================================
+
+// --- UPDATED: HANDLE MULTIPLE LOCAL FILES (PERSISTENT) ---
+        window.handleLocalMedia = (input) => {
+            if (input.files && input.files.length > 0) {
+                Array.from(input.files).sort((a,b) => a.name.localeCompare(b.name)).forEach((file, index) => {
+                    const isVideo = file.type.startsWith('video/');
+                    // Add to the permanent storage array
+                    localMediaState.push({
+                        name: file.name, // Use actual filename for display
+                        type: isVideo ? 'video_local' : 'image_local',
+                        src: URL.createObjectURL(file),
+                        filename: file.name
+                    });
+                });
+
+                showNotification(`${input.files.length} Files Added to Local Folder`);
+                
+                // Refresh Sidebar to show the "Folder"
+                renderHybridSidebar();
+                
+                // Automatically open the folder view
+                openLocalMediaGallery();
+            }
+            input.value = ""; // Reset input so you can add more later
+        }
+		
+		window.addYouTubeLink = () => {
+            const url = prompt("Paste YouTube URL (e.g., https://youtu.be/...)");
+            if (!url) return;
+
+            // Simple Regex to extract ID
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+
+            if (match && match[2].length === 11) {
+                const videoId = match[2];
+                
+                // Add to Local Folder
+                localMediaState.push({
+                    name: "YouTube Video",
+                    type: 'youtube', // New type!
+                    src: videoId,    // Store ID, not full URL
+                    filename: videoId
+                });
+
+                showNotification("YouTube Video Added 📺");
+                renderHybridSidebar();
+                openLocalMediaGallery();
+            } else {
+                alert("Invalid YouTube URL");
+            }
+        }
+		
+		// --- NEW: OPEN LOCAL GALLERY VIEW ---
+        window.openLocalMediaGallery = (element) => {
+            // Highlight sidebar item
+            document.querySelectorAll('.song-item').forEach(i => i.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            // Set current data to our persistent array
+            currentSongData = {
+                type: 'local_set',
+                title: '📂 Local Media Gallery',
+                parts: localMediaState // Reference the global array
+            };
+            
+            document.getElementById('current-song-title').innerText = `Local Gallery (${localMediaState.length})`;
+            renderLyricsGrid();
+        }
+
+        // --- NEW: REMOVE FILE FROM FOLDER ---
+window.removeLocalFile = (index, event) => {
+    if(event) event.stopPropagation(); // Prevents triggering "Go Live"
+    
+    // Check if we are deleting the item currently being broadcasted
+    if (currentPartIndex === index) {
+        // Stop any active video and clear audience screen
+        if (audienceWindow && !audienceWindow.closed) {
+            audienceWindow.updateDisplay('offline');
+        }
+        set(ref(db, 'presentation/video'), { state: 'stop' });
+        if(videoRenderLoop) cancelAnimationFrame(videoRenderLoop);
+        ctx.fillStyle = "black"; ctx.fillRect(0,0,1920,1080);
+        broadcastFrame('firebase');
+        currentPartIndex = -1;
+    } else if (currentPartIndex > index) {
+        // If we delete an item BEFORE the current live one, 
+        // shift the index down so the highlight stays on the right card
+        currentPartIndex--;
+    }
+    
+    // Remove from array
+    localMediaState.splice(index, 1);
+    
+    showNotification("File Removed 🗑️");
+    renderHybridSidebar(); // Update sidebar count
+    
+    if(localMediaState.length > 0) {
+        openLocalMediaGallery(); // Refresh grid
+    } else {
+        document.getElementById('lyrics-grid').innerHTML = '<div style="text-align:center; margin-top:50px; color:#94a3b8;">Local folder is empty.</div>';
+        document.getElementById('current-song-title').innerText = "No Song Selected";
+        currentSongData = null;
+    }
+}
+		
+
+        // --- PASSWORD & SESSION ---
+        function savePrefs() {
+            const toSave = { size: textSettings.size, align: textSettings.align, font: textSettings.font, color: textSettings.color, bg: textSettings.bg };
+            localStorage.setItem(PREFS_KEY, JSON.stringify(toSave));
+        }
+
+        function loadPrefs() {
+            const saved = localStorage.getItem(PREFS_KEY);
+            if(saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if(parsed.size) textSettings.size = parsed.size;
+                    if(parsed.align) textSettings.align = parsed.align;
+                    if(parsed.font) textSettings.font = parsed.font;
+                    if(parsed.color) textSettings.color = parsed.color;
+                    if(parsed.bg) textSettings.bg = parsed.bg;
+                    document.getElementById('size-val').innerText = textSettings.size;
+                    document.querySelector('input[type=range]').value = textSettings.size;
+                    document.getElementById('fontFamily').value = textSettings.font;
+                    document.getElementById('btnAlignLeft').classList.remove('active');
+                    document.getElementById('btnAlignCenter').classList.remove('active');
+                    if(textSettings.align === 'left') document.getElementById('btnAlignLeft').classList.add('active');
+                    if(textSettings.align === 'center') document.getElementById('btnAlignCenter').classList.add('active');
+                    document.querySelectorAll('.color-dot').forEach(d => {
+                        d.classList.remove('active');
+                        const dotColor = d.style.backgroundColor;
+                        if(textSettings.bg === 'black' && (dotColor === 'black' || dotColor === 'rgb(0, 0, 0)')) d.classList.add('active');
+                        else if(textSettings.bg === dotColor) d.classList.add('active');
+                    });
+                } catch(e) { console.log("Prefs load error", e); }
+            }
+        }
+
+        window.checkPassword = () => {
+            const val = document.getElementById('passwordInput').value;
+            if(val === APP_PASSWORD) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app-container').style.opacity = '1';
+                document.getElementById('app-container').style.pointerEvents = 'all';
+                loadPrefs();
+                sessionVersion = Date.now();
+                saveSession();
+                startNewSession(false);
+            } else {
+                document.getElementById('loginMsg').innerText = "Incorrect Password";
+            }
+        }
+
+        function saveSession() {
+            localStorage.setItem(SESSION_KEY, JSON.stringify({ timestamp: Date.now(), version: sessionVersion }));
+        }
+        setInterval(saveSession, 60 * 1000);
+
+        function startNewSession(isRestore = false) {
+            console.log("🚀 Starting Session. Restore Mode:", isRestore);
+            const myPresenceRef = ref(db, 'presentation/presence/presenter');
+            set(myPresenceRef, true);
+            onDisconnect(myPresenceRef).remove();
+            if (!isRestore) { updateStatus('offline'); isBlackout = true; updateBlackoutButton();
+            }
+            onDisconnect(ref(db, 'presentation/status')).set({ state: 'offline' });
+            startTimer();
+            onValue(ref(db, 'presentation/message'), (snapshot) => {
+                const box = document.getElementById('notification-box');
+                const txt = document.getElementById('notif-text');
+                if (snapshot.exists()) { txt.innerText = snapshot.val().text; box.style.display = 'flex'; }
+                else { box.style.display = 'none'; }
+            });
+            onValue(ref(db, 'presentation/status'), (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.state === 'offline') { if(!isBlackout) { isBlackout = true; updateBlackoutButton(); } } 
+                else { if(isBlackout) { isBlackout = false; updateBlackoutButton(); } }
+            });
+
+            // Start Hybrid Logic
+            fetchDriveImages();
+        }
+
+        function updateStatus(state) { set(ref(db, 'presentation/status'), { state: state, version: sessionVersion });
+        }
+
+        window.logout = () => {
+            if(!confirm("End Session?")) return;
+            isCleanLogout = true;
+            localStorage.removeItem(SESSION_KEY);
+            if (typeof audienceWindow !== 'undefined' && audienceWindow && !audienceWindow.closed) audienceWindow.close();
+            set(ref(db, 'presentation/status'), { state: 'offline' });
+            location.reload();
+        }
+
+        window.acknowledgeMessage = () => {
+            set(ref(db, 'presentation/ack'), { timestamp: Date.now(), text: "Acknowledged" });
+            remove(ref(db, 'presentation/message'));
+        }
+
+        function showNotification(text) {
+            const notif = document.getElementById('song-notification-toast');
+            if(notif) {
+                notif.innerHTML = `<span>🎵</span> <span>${text}</span>`;
+                notif.classList.add('show');
+                setTimeout(() => { notif.classList.remove('show'); }, 3000);
+            }
+        }
+
+        // --- RENDERER (CORE ENGINE) ---
+function renderLyricsGrid() {
+    const grid = document.getElementById('lyrics-grid');
+    grid.innerHTML = '';
+    if (!currentSongData) return;
+
+    // CASE 1: LOCAL MEDIA GALLERY (Local files & YouTube)
+    if (currentSongData.type === 'local_set') {
+        currentSongData.parts.forEach((part, index) => {
+            const card = document.createElement('div');
+            card.className = 'lyric-card is-local';
+            card.id = `part-${index}`;
+
+            let preview = '';
+            if (part.type === 'video_local') {
+                preview = `<video src="${part.src}" style="width:100%;height:100%;object-fit:contain;background:#000;" muted></video>`;
+            } else if (part.type === 'youtube') {
+                preview = `<img src="https://img.youtube.com/vi/${part.src}/0.jpg" style="width:100%;height:100%;object-fit:cover;">`;
+            } else {
+                preview = `<img src="${part.src}" style="width:100%;height:100%;object-fit:contain;background:#000;">`;
+            }
+
+            card.innerHTML = `
+                <button class="delete-btn" onclick="removeLocalFile(${index}, event)">×</button>
+                <div class="card-label">${part.name}</div>
+                <div class="card-preview">${preview}</div>`;
+            card.onclick = () => goLive(index);
+            grid.appendChild(card);
+        });
+    } 
+    // CASE 2: SINGLE IMAGE OR VIDEO
+    else if (currentSongData.type === 'image' || currentSongData.type === 'image_local' || currentSongData.type === 'video' || currentSongData.type === 'video_local') {
+        const card = document.createElement('div');
+        card.className = 'lyric-card';
+        card.id = `part-0`;
+        let content = currentSongData.type.includes('video') 
+            ? `<video src="${currentSongData.src}" muted playsinline></video>` 
+            : `<img src="${currentSongData.src}">`;
+        card.innerHTML = `<div class="card-label">MEDIA SLIDE</div><div class="card-preview">${content}</div>`;
+        card.onclick = () => goLive(0);
+        grid.appendChild(card);
+    } 
+    // CASE 3: STANDARD SONG LYRICS
+    else {
+        if (!currentSongData.parts) return;
+        currentSongData.parts.forEach((part, index) => {
+            const card = document.createElement('div');
+            card.className = 'lyric-card';
+            card.id = `part-${index}`;
+            card.innerHTML = `<div class="card-label">${part.name}</div><div class="card-preview">${part.lyrics.trim()}</div>`;
+            card.onclick = () => goLive(index);
+            grid.appendChild(card);
+        });
+    }
+}
+
+
+
+    // --- CASE 2: SINGLE IMAGE (No Delete Button) ---
+    if (currentSongData.type === 'image' || currentSongData.type === 'image_local') {
+        const card = document.createElement('div');
+        card.className = 'lyric-card'; 
+        card.id = `part-0`;
+        card.innerHTML = `<div class="card-label">IMAGE SLIDE</div><div class="card-preview"><img src="${currentSongData.src}" style="width:100%; height:100%; object-fit:contain; background:#000;"></div>`;
+        card.onclick = () => goLive(0);
+        grid.appendChild(card);
+
+    // --- CASE 3: SINGLE VIDEO (No Delete Button) ---
+    } else if (currentSongData.type === 'video' || currentSongData.type === 'video_local') {
+        const card = document.createElement('div');
+        card.className = 'lyric-card'; 
+        card.id = `part-0`;
+        card.innerHTML = `<div class="card-label">VIDEO SLIDE</div><div class="card-preview"><video src="${currentSongData.src}" style="width:100%; height:100%; object-fit:contain; background:#000;" muted playsinline></video></div>`;
+        card.onclick = () => goLive(0);
+        grid.appendChild(card);
+
+    // --- CASE 4: STANDARD WORSHIP SONGS (No Delete Button) ---
+    } else {
+        if(!currentSongData.parts) return;
+        currentSongData.parts.forEach((part, index) => {
+            const card = document.createElement('div');
+            card.className = 'lyric-card'; 
+            card.id = `part-${index}`;
+            const cleanText = part.lyrics.trim();
+            card.innerHTML = `<div class="card-label">${part.name}</div><div class="card-preview">${cleanText}</div>`;
+            card.onclick = () => goLive(index);
+            grid.appendChild(card);
+        });
+    }
+}
+
+
+
+        function broadcastFrame(target = 'all') {
+            const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+            if ((target === 'all' || target === 'local') && typeof audienceWindow !== 'undefined' && audienceWindow && audienceWindow.updateDisplay) {
+                audienceWindow.updateDisplay('image', dataURL);
+            }
+            if (target === 'all' || target === 'firebase') {
+                set(ref(db, 'presentation/liveView'), dataURL);
+            }
+        }
+
+
+/////////////////////////////////////////
+// --- GO LIVE ---
+        window.goLive = (index) => {
+            if(!currentSongData) return;
+            if (isBlackout) updateStatus('online'); 
+            currentPartIndex = index;
+            set(ref(db, 'presentation/currentSlide'), currentPartIndex + 1);
+            
+            // 1. RESET VIDEO CONTROLS UI
+            document.getElementById('video-controls').style.display = 'none';
+            if(videoSyncTimer) clearInterval(videoSyncTimer);
+            
+            document.querySelectorAll('.lyric-card').forEach(c => c.classList.remove('active'));
+            const activeCard = document.getElementById(`part-${index}`);
+            if(activeCard) { 
+                activeCard.classList.add('active'); 
+                activeCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+            }
+            
+            // Determine current source and type (Support for Local Sets or Single Song)
+            const item = currentSongData.type === 'local_set' ? currentSongData.parts[index] : currentSongData;
+            const src = currentSongData.type === 'local_set' ? item.src : currentSongData.src;
+            const type = currentSongData.type === 'local_set' ? item.type : currentSongData.type;
+			
+			// --- NEW: HANDLING YOUTUBE ---
+            if (type === 'youtube') {
+                document.getElementById('video-controls').style.display = 'flex';
+                
+                if (typeof audienceWindow !== 'undefined' && audienceWindow && !audienceWindow.closed && audienceWindow.updateDisplay) {
+                    audienceWindow.updateDisplay('youtube', src); // src is the Video ID
+                    startVideoSync();
+                } else {
+                    alert("⚠️ WARNING: Audience Window is NOT open.");
+                }
+                
+                set(ref(db, 'presentation/video'), { state: 'stop' });
+                
+                // Draw YouTube Placeholder on Local Canvas
+                ctx.fillStyle = "black"; ctx.fillRect(0, 0, 1920, 1080);
+                ctx.fillStyle = "#FF0000"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.font = "bold 50px Inter, sans-serif";
+                ctx.fillText("YouTube Playing on Audience Screen", 960, 500);
+                ctx.font = "30px Inter"; ctx.fillStyle = "white";
+                ctx.fillText(item.name || "YouTube Video", 960, 580);
+                broadcastFrame('firebase'); 
+                return;
+            }
+
+            // 2. HANDLING VIDEOS
+            if (type && type.includes('video')) {
+                document.getElementById('video-controls').style.display = 'flex';
+                if (typeof audienceWindow !== 'undefined' && audienceWindow && !audienceWindow.closed && audienceWindow.updateDisplay) {
+                    audienceWindow.updateDisplay('video', src);
+                    startVideoSync(); // Start seeker updates
+                } else {
+                    alert("⚠️ WARNING: Audience Window is NOT open.");
+                }
+                set(ref(db, 'presentation/video'), { state: 'stop' });
+                
+                // Show placeholder on controller canvas
+                ctx.fillStyle = "black"; ctx.fillRect(0, 0, 1920, 1080);
+                ctx.fillStyle = "#8b5cf6"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.font = "bold 50px Inter, sans-serif";
+                ctx.fillText("Video Playing on Audience Screen", 960, 540);
+                broadcastFrame('firebase'); 
+                
+                renderVideoToCanvas(src, false);
+                return;
+            }
+
+            // 3. HANDLING AUDIO
+            if (type && type.includes('audio')) {
+                document.getElementById('video-controls').style.display = 'flex';
+                if (typeof audienceWindow !== 'undefined' && audienceWindow && !audienceWindow.closed && audienceWindow.updateDisplay) {
+                    audienceWindow.updateDisplay('video', src); // Audio uses video layer in template
+                    startVideoSync();
+                }
+                set(ref(db, 'presentation/video'), { state: 'stop' });
+
+                // Draw "Now Playing" UI for Audience View
+                ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 1920, 1080);
+                ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 60px Inter";
+                ctx.fillText("🎵 Audio Playing...", 960, 500);
+                ctx.font = "30px Inter"; ctx.fillStyle = "#94a3b8";
+                ctx.fillText(item.filename || "Local Track", 960, 580);
+                broadcastFrame('all');
+                return;
+            }
+
+            // 4. HANDLING IMAGES
+            if (type && type.includes('image')) {
+                if (typeof audienceWindow !== 'undefined' && audienceWindow && audienceWindow.updateDisplay) {
+                    audienceWindow.updateDisplay('image', src);
+                }
+                set(ref(db, 'presentation/video'), { state: 'stop' });
+                renderImageToCanvas(src); 
+                return;
+            }
+
+            // 5. HANDLING LYRICS
+            set(ref(db, 'presentation/video'), { state: 'stop' });
+            if(videoRenderLoop) cancelAnimationFrame(videoRenderLoop); 
+            renderTextToCanvas(currentSongData.parts[index].lyrics);
+        }
+
+        window.navigatePart = (dir) => {
+            if(!currentSongData) return;
+            let next = currentPartIndex + dir;
+            if(next >= 0 && next < currentSongData.parts.length) goLive(next);
+        }
+
+        function renderImageToCanvas(src) {
+            if(videoRenderLoop) cancelAnimationFrame(videoRenderLoop);
+            const img = new Image();
+            img.onload = () => {
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 1920, 1080);
+                const hRatio = 1920 / img.width; const vRatio = 1080 / img.height;
+                const ratio = Math.min(hRatio, vRatio);
+                const centerShift_x = (1920 - img.width * ratio) / 2;
+                const centerShift_y = (1080 - img.height * ratio) / 2;
+                ctx.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width*ratio, img.height*ratio);
+                broadcastFrame('all');
+            };
+            img.src = src;
+        }
+
+        let videoRenderLoop = null;
+        function renderVideoToCanvas(src, shouldBroadcast = true) {
+            const video = document.createElement('video');
+            video.src = src; video.muted = true; video.loop = true; video.play();
+            if (videoRenderLoop) cancelAnimationFrame(videoRenderLoop);
+            function step() {
+                if(video.paused || video.ended) return;
+                ctx.fillStyle = "black"; ctx.fillRect(0, 0, 1920, 1080);
+                const ratio = Math.min(1920 / video.videoWidth, 1080 / video.videoHeight);
+                const x = (1920 - video.videoWidth * ratio) / 2;
+                const y = (1080 - video.videoHeight * ratio) / 2;
+                ctx.drawImage(video, x, y, video.videoWidth * ratio, video.videoHeight * ratio);
+                if(shouldBroadcast) broadcastFrame('all');
+                videoRenderLoop = requestAnimationFrame(step);
+            }
+            video.onloadeddata = () => step();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'ArrowRight') navigatePart(1);
+            if (e.key === 'ArrowLeft') navigatePart(-1);
+            if (!currentSongData || !currentSongData.parts) return;
+            const key = e.key.toLowerCase();
+            let targetName = null;
+            if (key >= '1' && key <= '9') targetName = `Verse ${key}`;
+            const map = { 'c': 'Chorus', 'd': 'Chorus 2', 'e': 'Chorus 3', 'f': 'Chorus 4', 'b': 'Bridge', 'p': 'Pre-Chorus', 't': 'Tag', 'i': 'Intro', 'o': 'Outro', 'r': 'Refrain' };
+            if (map[key]) targetName = map[key];
+            if (targetName) {
+                const index = currentSongData.parts.findIndex(p => {
+                    const pName = p.name.toLowerCase().trim();
+                    const tName = targetName.toLowerCase();
+                    if (tName === 'pre-chorus' && (pName === 'pre-chorus' || pName === 'pre chorus')) return true;
+                    return pName === tName;
+                });
+                if (index !== -1) goLive(index);
+            }
+        });
+
+        function renderTextToCanvas(text) {
+			if (!text || typeof text !== 'string') return;
+            if(videoRenderLoop) cancelAnimationFrame(videoRenderLoop);
+            if (textSettings.bgImage) { 
+                ctx.drawImage(textSettings.bgImage, 0, 0, 1920, 1080); 
+                ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(0, 0, 1920, 1080);
+            } else { 
+                ctx.fillStyle = textSettings.bg;
+                ctx.fillRect(0, 0, 1920, 1080); 
+            }
+            
+            ctx.fillStyle = textSettings.color;
+            ctx.textAlign = textSettings.align; ctx.textBaseline = 'middle';
+            ctx.font = `bold ${textSettings.size}px ${textSettings.font}`;
+
+            let x = 960; const pad = 100;
+            const maxWidth = 1920 - (pad * 2);
+            if(textSettings.align === 'left') x = pad;
+            if(textSettings.align === 'right') x = 1920 - pad;
+            
+            const rawLines = text.split('\n'); let wrappedLines = [];
+            rawLines.forEach(line => {
+                const words = line.split(' '); let currentLine = words[0];
+                for (let i = 1; i < words.length; i++) {
+                    const word = words[i];
+                    const width = ctx.measureText(currentLine + " " + word).width;
+                    if (width < maxWidth) currentLine += " " + word;
+                    else { wrappedLines.push(currentLine); currentLine = word; }
+                }
+                wrappedLines.push(currentLine);
+            });
+
+            const lineHeight = textSettings.size * 1.4; const totalHeight = wrappedLines.length * lineHeight;
+            let startY = 540 - (totalHeight / 2) + (lineHeight / 2);
+            wrappedLines.forEach((line, i) => { ctx.fillText(line, x, startY + (i * lineHeight)); });
+            broadcastFrame('all');
+        }
+
+        window.updateFontSize = (val) => { 
+            textSettings.size = parseInt(val); 
+            document.getElementById('size-val').innerText = val; 
+            savePrefs();
+            if(currentPartIndex >= 0) goLive(currentPartIndex); 
+        }
+
+        window.setTextAlign = (align) => {
+            textSettings.align = align;
+            document.getElementById('btnAlignLeft').classList.toggle('active', align === 'left');
+            document.getElementById('btnAlignCenter').classList.toggle('active', align === 'center');
+            savePrefs(); 
+            if(currentPartIndex >= 0) goLive(currentPartIndex);
+        }
+
+        window.updateFont = (font) => { 
+            textSettings.font = font; 
+            savePrefs();
+            if(currentPartIndex >= 0) goLive(currentPartIndex); 
+        }
+
+        window.setBgColor = (color, el) => {
+            textSettings.bgImage = null;
+            textSettings.bg = color;
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            el.classList.add('active');
+            textSettings.color = color === 'white' ? 'black' : 'white';
+            savePrefs();
+            if(currentPartIndex >= 0) goLive(currentPartIndex);
+        }
+
+        window.uploadBgImage = (input) => {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() { 
+                        textSettings.bgImage = img; 
+                        textSettings.color = 'white'; 
+                        if(currentPartIndex >= 0) goLive(currentPartIndex); 
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        window.clearBgImage = () => {
+            textSettings.bgImage = null;
+            textSettings.bg = 'black';
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            document.querySelector('.color-dot[style*="black"]').classList.add('active');
+            savePrefs(); 
+            if(currentPartIndex >= 0) goLive(currentPartIndex);
+        }
+
+        window.toggleBlackout = () => {
+            isBlackout = !isBlackout;
+            updateBlackoutButton();
+            if(isBlackout) { 
+                updateStatus('offline');
+                set(ref(db, 'presentation/video'), { state: 'stop' }); 
+                if(videoRenderLoop) cancelAnimationFrame(videoRenderLoop);
+                if (typeof audienceWindow !== 'undefined' && audienceWindow && !audienceWindow.closed && audienceWindow.updateDisplay) {
+                    audienceWindow.updateDisplay('offline');
+                }
+                ctx.fillStyle = 'black'; ctx.fillRect(0,0,1920,1080);
+                broadcastFrame('firebase'); 
+            } else { 
+                updateStatus('online');
+                if(currentPartIndex >= 0 && currentSongData) {
+                    setTimeout(() => goLive(currentPartIndex), 100); 
+                } else {
+                    ctx.fillStyle = textSettings.bgImage ? 'transparent' : textSettings.bg;
+                    if(textSettings.bgImage) ctx.drawImage(textSettings.bgImage, 0, 0, 1920, 1080);
+                    else ctx.fillRect(0, 0, 1920, 1080);
+                    broadcastFrame('all');
+                }
+            }
+        }
+
+        function updateBlackoutButton() {
+            const btn = document.getElementById('btnBlackout');
+            btn.innerText = isBlackout ? "🔴 SCREEN IS OFF" : "🟢 SCREEN IS LIVE";
+            btn.style.background = isBlackout ? "#0f172a" : "var(--success)";
+            btn.style.color = "white";
+        }
+
+        function startTimer() {
+            let s = 0;
+            setInterval(() => {
+                s++;
+                const mins = Math.floor(s/60).toString().padStart(2, '0');
+                const secs = (s%60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${mins}:${secs}`;
+                set(ref(db, 'presentation/timer'), s);
+            }, 1000);
+        }
+
+        // --- VIDEO CONTROL LOGIC ---
+        let videoSyncTimer = null;
+        let isSeeking = false;
+
+        window.controlVideo = (action, value) => {
+            if (audienceWindow && !audienceWindow.closed && audienceWindow.videoControl) {
+                if(action === 'seek') isSeeking = true;
+                audienceWindow.videoControl(action, value);
+                if(action === 'seek') setTimeout(() => isSeeking = false, 500);
+            }
+        }
+
+        function startVideoSync() {
+            if(videoSyncTimer) clearInterval(videoSyncTimer);
+            const seeker = document.getElementById('video-seeker');
+            const timeDisplay = document.getElementById('video-time-display');
+
+            videoSyncTimer = setInterval(() => {
+                if(!audienceWindow || audienceWindow.closed || isSeeking) return;
+                const status = audienceWindow.videoControl('status'); 
+                if(status && status.duration) {
+                    seeker.max = status.duration;
+                    seeker.value = status.time;
+                    timeDisplay.innerText = formatTime(status.time) + " / " + formatTime(status.duration);
+                }
+            }, 500);
+        }
+
+        function formatTime(seconds) {
+            if(isNaN(seconds)) return "00:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // --- BOOT SESSION ---
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (Date.now() - data.timestamp < SESSION_TIMEOUT) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app-container').style.opacity = '1';
+                document.getElementById('app-container').style.pointerEvents = 'all';
+                loadPrefs();
+                sessionVersion = data.version;
+                startNewSession(true);
+            }
+        }
+
+        window.addEventListener('beforeunload', function (e) {
+            if (isCleanLogout) return;
+            e.preventDefault(); e.returnValue = '';
+        });
+	
+    </script>
+</body>
+</html>
