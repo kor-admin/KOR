@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KOR Fundraising</title>
+
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --text:#eaf0ff;
+      --muted:#9aa6c4;
+      --line:rgba(255,255,255,.10);
+      --shadow:0 10px 30px rgba(0,0,0,.45);
+      --radius:18px;
+      --accent:#4aa3ff;
+      --danger:#ff5a7a;
+      --ok:#35d07f;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(74,163,255,.18), transparent 55%),
+                  radial-gradient(900px 600px at 80% 30%, rgba(124,92,255,.16), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(to bottom, rgba(11,15,23,.95), rgba(11,15,23,.65));
+      border-bottom:1px solid var(--line);
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:18px 18px 40px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.08);object-fit:cover}
+    .brand b{font-size:18px}
+    .brand .sub{font-size:12px;color:var(--muted)}
+
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition:.15s ease;
+      display:inline-flex;align-items:center;gap:8px;
+      color:var(--text);
+      user-select:none;
+    }
+    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.09)}
+    .btn.primary{ border-color: rgba(74,163,255,.40); background: rgba(74,163,255,.18); }
+    .btn.danger{ border-color: rgba(255,90,122,.40); background: rgba(255,90,122,.14); }
+    .btn.ok{ border-color: rgba(53,208,127,.40); background: rgba(53,208,127,.14); }
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:16px;margin-top:16px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .hd{padding:14px 14px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .hd h2{margin:0;font-size:14px;letter-spacing:.2px}
+    .bd{padding:14px}
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .field label{font-size:12px;color:var(--muted)}
+    .field input,.field select,.field textarea{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      padding:11px 12px;
+      border-radius:12px;
+      color:var(--text);
+      outline:none;
+    }
+    .field textarea{min-height:70px;resize:vertical}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1}
+
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    @media (max-width:560px){.stats{grid-template-columns:1fr}}
+    .stat{padding:12px;border-radius:16px;border:1px solid var(--line);background: rgba(0,0,0,.14)}
+    .stat b{display:block;font-size:20px}
+    .stat span{font-size:12px;color:var(--muted)}
+
+    .amounts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
+    .chip{border:1px solid var(--line);background: rgba(255,255,255,.06);padding:8px 10px;border-radius:999px;cursor:pointer;font-size:13px}
+    .chip.active{border-color: rgba(74,163,255,.55);background: rgba(74,163,255,.18)}
+
+    .list{margin-top:10px;border-top:1px solid var(--line)}
+    .item{display:grid;grid-template-columns: 1.4fr .9fr .6fr .9fr;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:center}
+    @media (max-width: 880px){ .item{grid-template-columns:1fr;gap:6px} }
+    .name{font-weight:800}
+    .small{color:var(--muted);font-size:12px}
+    .amt{font-weight:900}
+    .tools{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+    .toast{
+      position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+      background: rgba(0,0,0,.70);
+      border:1px solid rgba(255,255,255,.14);
+      padding:10px 12px;
+      border-radius:14px;
+      color:var(--text);
+      box-shadow: var(--shadow);
+      display:none;
+      max-width:min(560px, calc(100vw - 24px));
+      font-size:13px;
+    }
+
+    /* Login overlay (solid) */
+    .overlay{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background: #000;
+      z-index:999;
+    }
+    .login{
+      width:min(480px, calc(100vw - 24px));
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:22px;
+      box-shadow: var(--shadow);
+      padding:18px;
+    }
+    .login h3{margin:0 0 6px 0}
+    .login p{margin:0 0 14px 0; color:var(--muted); font-size:13px}
+
+    /* Print / PDF */
+    @media print{
+      body{ background:#fff; color:#000 }
+      header, .no-print{ display:none !important; }
+      .wrap{ max-width:none; padding:0 }
+      .card{ box-shadow:none; border:0; }
+      .hd{ border:0; }
+      .bd{ padding:0; }
+      .print-title{ display:block !important; }
+      .print-title h1{ margin:0 0 6px 0; font-size:18px; }
+      .print-title .meta{ font-size:12px; color:#333; margin-bottom:10px; }
+      .item{ grid-template-columns: 1.6fr 1.2fr .7fr; }
+      .item .tools{ display:none !important; }
+    }
+    .print-title{ display:none; }
+  </style>
+</head>
+
+<body>
+  <div class="overlay" id="overlay">
+    <div class="login">
+      <h3>🔒 KOR Fundraising</h3>
+      <p>Login</p>
+
+      <div class="row">
+        <div class="field">
+          <label>Username</label>
+          <input id="userInput" autocomplete="username" placeholder="username" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="passInput" type="password" autocomplete="current-password" placeholder="••••••••" />
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn primary" id="btnLogin">Login</button>
+        <button class="btn" id="btnRemember">Remember</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="no-print">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <img src="logo.png" alt="KOR Logo" onerror="this.style.display='none'">
+          <div>
+            <b>KOR Fundraising</b>
+            <div class="sub">Auth (key/user/pass) + JSONP + PDF export</div>
+          </div>
+        </div>
+
+        <div class="row" style="gap:10px; justify-content:flex-end; align-items:center">
+          <span class="pill">Status: <b id="statusText">Ready</b></span>
+          <button class="btn" id="btnRefresh">🔄 Refresh</button>
+          <button class="btn" id="btnLogout">🚪 Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="print-title">
+      <h1>KOR Fundraising Report</h1>
+      <div class="meta" id="printMeta"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="hd">
+          <h2>Fundraisings</h2>
+          <button class="btn no-print" id="btnNewFund">➕ New</button>
+        </div>
+        <div class="bd">
+          <div class="field">
+            <label>Select fundraising</label>
+            <select id="fundSelect"></select>
+          </div>
+
+<div class="row no-print">
+  <button class="btn danger" id="btnDeleteFund">🗑️ Delete</button>
+  <button class="btn" id="btnRenameFund">✏️ Rename</button>
+</div>
+
+          <div style="height:12px"></div>
+
+          <div class="card no-print" style="border-radius:16px">
+            <div class="bd">
+              <div class="small">Export</div>
+              <div class="row" style="margin-top:8px">
+                <button class="btn ok" id="btnExportPdf">🧾 Export PDF</button>
+                <button class="btn" id="btnExportCsv">📄 Export CSV</button>
+              </div>
+              <div class="small" style="margin-top:10px">
+                PDF uses your browser Print → “Save as PDF”.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <h2>Commitments</h2>
+          <input id="searchBox" style="min-width:240px" class="no-print" placeholder="Search name / notes…" />
+        </div>
+
+        <div class="bd">
+          <div class="stats">
+            <div class="stat">
+              <b id="statFundTotal">0</b>
+              <span>Total funded (this fundraising)</span>
+            </div>
+            <div class="stat">
+              <b id="statAllTotal">0</b>
+              <span>Total funded (all fundraisings)</span>
+            </div>
+            <div class="stat">
+              <b id="statCount">0</b>
+              <span>Commitments count</span>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="row no-print">
+            <div class="field" style="min-width:220px">
+              <label>Committed by (Name)</label>
+              <input id="inName" placeholder="e.g. John Doe" />
+            </div>
+
+            <div class="field" style="min-width:220px">
+              <label>Date & Time</label>
+              <input id="inDT" type="datetime-local" />
+            </div>
+
+            <div class="field" style="min-width:160px">
+              <label>Amount</label>
+              <input id="inAmount" type="number" min="0" step="1" placeholder="e.g. 10" />
+              <div class="amounts" id="amountChips"></div>
+            </div>
+          </div>
+
+          <div class="field no-print">
+            <label>Notes (optional)</label>
+            <textarea id="inNotes" placeholder="e.g. will give after service…"></textarea>
+          </div>
+
+          <div class="row no-print">
+            <button class="btn primary" id="btnAdd">➕ Add Commitment</button>
+            <button class="btn" id="btnClearForm">🧹 Clear</button>
+            <button class="btn danger" id="btnClearAll">⚠️ Clear commitments (this fundraising)</button>
+          </div>
+
+          <div class="list" id="commitList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  // ===== SETTINGS (match your Apps Script config) =====
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrZmvgRH4ogGJADQTX5EdmPnL6t2AXFV3BEe-FNRyB1fAk5Oib1dIA_74nW7YdVDas/exec";
+  const ACCESS_KEY = "KOR_ADMIN_2025";
+  const DEFAULT_AMOUNTS = [5,10,15,20,30,50,100];
+  const LS_AUTH_KEY = "KOR_FUND_AUTH";
+
+  let app = { activeFundId:null, fundraisings:[], commitments:[], amounts:[...DEFAULT_AMOUNTS] };
+  const $ = (id)=>document.getElementById(id);
+
+  function toast(msg, ok=true){
+    const t = $("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    t.style.borderColor = ok ? "rgba(53,208,127,.35)" : "rgba(255,90,122,.35)";
+    t.style.background = ok ? "rgba(53,208,127,.14)" : "rgba(255,90,122,.14)";
+    clearTimeout(toast._tm);
+    toast._tm = setTimeout(()=>{ t.style.display="none"; }, 2200);
+  }
+  function setStatus(text){ $("statusText").textContent = text; }
+  function safeTrim(s){ return String(s||"").trim(); }
+  function money(n){ return Number(n||0).toLocaleString(undefined,{maximumFractionDigits:0}); }
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+  function nowLocalDTValue(){
+    const d=new Date(); const pad=n=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function parseDTLocalToISO(dtLocal){
+    const d=new Date(dtLocal);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  }
+  function isoToNice(iso){
+    const d=new Date(iso);
+    return (!iso || Number.isNaN(d.getTime())) ? "—" : d.toLocaleString();
+  }
+
+  function saveAuth(user, pass, remember){
+    const auth = { user, pass };
+    window.__auth = auth;
+    if (remember) localStorage.setItem(LS_AUTH_KEY, JSON.stringify(auth));
+  }
+  function loadAuth(){
+    if (window.__auth) return window.__auth;
+    const raw = localStorage.getItem(LS_AUTH_KEY);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  }
+  function clearAuth(){
+    window.__auth = null;
+    localStorage.removeItem(LS_AUTH_KEY);
+  }
+
+  function showLogin(){ $("overlay").style.display = "flex"; $("userInput").focus(); }
+  function hideLogin(){ $("overlay").style.display = "none"; }
+
+  async function login(remember){
+    const user = safeTrim($("userInput").value);
+    const pass = $("passInput").value;
+    if(!user || !pass){ toast("Username and password required", false); return; }
+    saveAuth(user, pass, remember);
+
+    try{
+      await sendToAppScript({ action:"ping" });
+      hideLogin();
+      toast("Welcome!", true);
+      await initAfterLogin();
+    } catch(e){
+      clearAuth();
+      toast(e.message || "Unauthorized", false);
+    }
+  }
+
+  function logout(){
+    clearAuth();
+    toast("Logged out", true);
+    showLogin();
+  }
+
+  function sendToAppScript(payload){
+    setStatus("Saving/Loading…");
+
+    const auth = loadAuth();
+    if(!auth || !auth.user || !auth.pass){
+      return Promise.reject(new Error("Not logged in"));
+    }
+
+    payload.key = ACCESS_KEY;
+    payload.user = auth.user;
+    payload.pass = auth.pass;
+
+    return new Promise((resolve, reject)=>{
+      const cbName = "kor_cb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+
+      window[cbName] = (data) => {
+        try { delete window[cbName]; script.remove(); } catch(e){}
+        if(!data || data.ok !== true){
+          setStatus("Error");
+          reject(new Error((data && data.error) ? data.error : "Apps Script error"));
+          return;
+        }
+        setStatus("Ready");
+        resolve(data);
+      };
+
+      const params = new URLSearchParams();
+      for(const k in payload){
+        if(payload[k] === undefined || payload[k] === null) continue;
+        params.set(k, String(payload[k]));
+      }
+      params.set("callback", cbName);
+
+      const script = document.createElement("script");
+      script.src = APPS_SCRIPT_URL + "?" + params.toString();
+      script.onerror = () => {
+        try { delete window[cbName]; } catch(e){}
+        script.remove();
+        setStatus("Error");
+        reject(new Error("Failed to load Apps Script (JSONP)."));
+      };
+
+      document.body.appendChild(script);
+    });
+  }
+
+  function renderFundSelect(){
+    const sel = $("fundSelect");
+    sel.innerHTML = "";
+    for(const f of app.fundraisings){
+      const opt = document.createElement("option");
+      opt.value = f.fundId;
+      opt.textContent = f.fundName;
+      sel.appendChild(opt);
+    }
+    if(app.activeFundId) sel.value = app.activeFundId;
+  }
+
+  function renderAmountChips(){
+    const box = $("amountChips");
+    box.innerHTML = "";
+    const current = Number($("inAmount").value || 0);
+    for(const amt of app.amounts){
+      const chip = document.createElement("div");
+      chip.className = "chip" + (current === amt ? " active" : "");
+      chip.textContent = amt;
+      chip.onclick = ()=>{ $("inAmount").value = amt; renderAmountChips(); };
+      box.appendChild(chip);
+    }
+  }
+
+  function renderStats(allTotal=0){
+    const fundTotal = app.commitments.reduce((s,c)=>s + Number(c.amount||0), 0);
+    $("statFundTotal").textContent = money(fundTotal);
+    $("statAllTotal").textContent = money(allTotal);
+    $("statCount").textContent = String(app.commitments.length);
+  }
+
+  function renderCommitments(allTotal=0){
+    const list = $("commitList");
+    list.innerHTML = "";
+
+    const q = safeTrim($("searchBox").value).toLowerCase();
+    const filtered = app.commitments.filter(c=>{
+      if(!q) return true;
+      return (`${c.personName||""} ${c.notes||""}`).toLowerCase().includes(q);
+    });
+
+    if(filtered.length === 0){
+      list.innerHTML = `<div class="item"><div class="small">No commitments yet (or no match).</div></div>`;
+      renderStats(allTotal);
+      return;
+    }
+
+    for(const c of filtered){
+      const row = document.createElement("div");
+      row.className = "item";
+      row.innerHTML = `
+        <div>
+          <div class="name">${escapeHtml(c.personName || "—")}</div>
+          <div class="small">${escapeHtml(c.notes || "")}</div>
+        </div>
+        <div>
+          <div class="small">Date & Time</div>
+          <div>${escapeHtml(isoToNice(c.dtISO))}</div>
+        </div>
+        <div>
+          <div class="small">Amount</div>
+          <div class="amt">${escapeHtml(money(c.amount))}</div>
+        </div>
+        <div class="tools no-print">
+          <button class="btn" data-act="edit">✏️ Edit</button>
+          <button class="btn danger" data-act="del">🗑️ Delete</button>
+        </div>
+      `;
+      row.querySelector('[data-act="edit"]')?.addEventListener("click", ()=>editCommitment(c.commitId));
+      row.querySelector('[data-act="del"]')?.addEventListener("click", ()=>deleteCommitment(c.commitId));
+      list.appendChild(row);
+    }
+
+    renderStats(allTotal);
+  }
+
+  async function refreshAll(){
+    const funds = await sendToAppScript({ action:"listFundraisings" });
+    app.fundraisings = funds.fundraisings || [];
+
+    if(app.fundraisings.length === 0){
+      await sendToAppScript({ action:"createFundraising", name:"General Fundraising" });
+      const funds2 = await sendToAppScript({ action:"listFundraisings" });
+      app.fundraisings = funds2.fundraisings || [];
+    }
+
+    if(!app.activeFundId) app.activeFundId = app.fundraisings[0].fundId;
+    if(!app.fundraisings.some(f=>f.fundId===app.activeFundId)){
+      app.activeFundId = app.fundraisings[0].fundId;
+    }
+
+    renderFundSelect();
+    await loadCommitmentsForActive();
+  }
+
+  async function loadCommitmentsForActive(){
+    const commits = await sendToAppScript({ action:"listCommitments", fundId: app.activeFundId });
+    app.commitments = (commits.commitments || []).map(x=>({
+      commitId:x.commitId, fundId:x.fundId, fundName:x.fundName,
+      personName:x.personName, dtISO:x.dtISO, amount:Number(x.amount||0),
+      notes:x.notes||"", createdAt:x.createdAt
+    }));
+
+    const totals = await sendToAppScript({ action:"totals", fundId: app.activeFundId });
+    renderCommitments(Number(totals.allTotal||0));
+  }
+
+  async function newFundraising(){
+    const name = prompt("New fundraising name:");
+    if(!name) return;
+    await sendToAppScript({ action:"createFundraising", name:safeTrim(name) });
+    toast("Fundraising created", true);
+    await refreshAll();
+  }
+
+  async function renameFundraising(){
+    const cur = app.fundraisings.find(f=>f.fundId===app.activeFundId);
+    if(!cur) return;
+    const newName = prompt("Rename fundraising:", cur.fundName);
+    if(!newName) return;
+    await sendToAppScript({ action:"renameFundraising", fundId:cur.fundId, newName:safeTrim(newName) });
+    toast("Renamed", true);
+    await refreshAll();
+  }
+
+  async function deleteFundraising(){
+    const cur = app.fundraisings.find(f=>f.fundId===app.activeFundId);
+    if(!cur) return;
+    if(!confirm(`Delete fundraising "${cur.fundName}"? This removes all commitments.`)) return;
+    await sendToAppScript({ action:"deleteFundraising", fundId:cur.fundId });
+    app.activeFundId = null;
+    toast("Deleted", true);
+    await refreshAll();
+  }
+
+  function clearForm(){
+    $("inName").value="";
+    $("inDT").value=nowLocalDTValue();
+    $("inAmount").value="";
+    $("inNotes").value="";
+    renderAmountChips();
+  }
+
+  function resetAddButton(){
+    const b = $("btnAdd");
+    b.textContent = "➕ Add Commitment";
+    b.classList.remove("ok");
+    b.classList.add("primary");
+    b.onclick = addCommitment;
+  }
+
+  async function addCommitment(){
+    const fund = app.fundraisings.find(f=>f.fundId===app.activeFundId);
+    if(!fund){ toast("No fundraising selected", false); return; }
+
+    const personName = safeTrim($("inName").value);
+    const dtLocal = $("inDT").value;
+    const amount = Number($("inAmount").value);
+    const notes = safeTrim($("inNotes").value);
+
+    if(!personName) return toast("Name is required", false);
+    if(!dtLocal) return toast("Date & time is required", false);
+    if(!Number.isFinite(amount) || amount<=0) return toast("Enter a valid amount", false);
+
+    await sendToAppScript({
+      action:"addCommitment",
+      fundId: fund.fundId,
+      fundName: fund.fundName,
+      personName,
+      dtISO: parseDTLocalToISO(dtLocal),
+      amount,
+      notes
+    });
+
+    toast("Commitment added", true);
+    resetAddButton();
+    clearForm();
+    await loadCommitmentsForActive();
+  }
+
+  function toDTLocalFromISO(iso){
+    const d=new Date(iso);
+    if(!iso || Number.isNaN(d.getTime())) return nowLocalDTValue();
+    const pad=n=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function editCommitment(commitId){
+    const c = app.commitments.find(x=>x.commitId===commitId);
+    if(!c) return;
+
+    $("inName").value = c.personName || "";
+    $("inDT").value = toDTLocalFromISO(c.dtISO);
+    $("inAmount").value = Number(c.amount||0);
+    $("inNotes").value = c.notes || "";
+    renderAmountChips();
+
+    const b = $("btnAdd");
+    b.textContent = "💾 Save Edit";
+    b.classList.add("ok");
+    b.classList.remove("primary");
+
+    b.onclick = async ()=>{
+      const personName = safeTrim($("inName").value);
+      const dtLocal = $("inDT").value;
+      const amount = Number($("inAmount").value);
+      const notes = safeTrim($("inNotes").value);
+
+      if(!personName) return toast("Name is required", false);
+      if(!dtLocal) return toast("Date & time is required", false);
+      if(!Number.isFinite(amount) || amount<=0) return toast("Valid amount required", false);
+
+      await sendToAppScript({
+        action:"updateCommitment",
+        commitId,
+        personName,
+        dtISO: parseDTLocalToISO(dtLocal),
+        amount,
+        notes
+      });
+
+      toast("Updated", true);
+      resetAddButton();
+      clearForm();
+      await loadCommitmentsForActive();
+    };
+  }
+
+  async function deleteCommitment(commitId){
+    const c = app.commitments.find(x=>x.commitId===commitId);
+    if(!c) return;
+    if(!confirm(`Delete commitment by "${c.personName}"?`)) return;
+    await sendToAppScript({ action:"deleteCommitment", commitId });
+    toast("Deleted", true);
+    await loadCommitmentsForActive();
+  }
+
+  async function clearCommitmentsForActive(){
+    const fund = app.fundraisings.find(f=>f.fundId===app.activeFundId);
+    if(!fund) return;
+    if(!confirm(`Clear ALL commitments for "${fund.fundName}"?`)) return;
+
+    for(const c of [...app.commitments]){
+      await sendToAppScript({ action:"deleteCommitment", commitId:c.commitId });
+    }
+    toast("Cleared", true);
+    await loadCommitmentsForActive();
+  }
+
+  function exportCSV(){
+    const fund = app.fundraisings.find(f=>f.fundId===app.activeFundId);
+    const fundName = fund ? fund.fundName : "Fundraising";
+
+    const rows = [];
+    rows.push(["Fundraising","Name","DateTime","Amount","Notes"]);
+    for(const c of app.commitments){
+      rows.push([fundName, c.personName||"", isoToNice(c.dtISO), String(c.amount||0), (c.notes||"").replaceAll("\n"," ")]);
+    }
+    const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${fundName.replaceAll(/[^\w\-]+/g,"_")}_commitments.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function exportPDF(){
+    const fund = app.fundraisings.find(f=>f.fundId===app.activeFundId);
+    const fundName = fund ? fund.fundName : "Fundraising";
+    const now = new Date().toLocaleString();
+    $("printMeta").textContent = `Fundraising: ${fundName} • Generated: ${now}`;
+    window.print();
+  }
+
+  let started = false;
+  async function initAfterLogin(){
+    if(started) return;
+    started = true;
+
+    $("inDT").value = nowLocalDTValue();
+    renderAmountChips();
+    resetAddButton();
+
+    $("btnRefresh").onclick = async ()=>{ try{ await refreshAll(); toast("Refreshed", true); } catch(e){ toast(e.message||e, false);} };
+    $("btnLogout").onclick = logout;
+
+    $("btnNewFund").onclick = async ()=>{ try{ await newFundraising(); } catch(e){ toast(e.message||e,false);} };
+    $("btnRenameFund").onclick = async ()=>{ try{ await renameFundraising(); } catch(e){ toast(e.message||e,false);} };
+    $("btnDeleteFund").onclick = async ()=>{ try{ await deleteFundraising(); } catch(e){ toast(e.message||e,false);} };
+
+    $("fundSelect").onchange = async (e)=>{ app.activeFundId = e.target.value; resetAddButton(); await loadCommitmentsForActive(); };
+
+    $("btnAdd").onclick = addCommitment;
+    $("btnClearForm").onclick = ()=>{ resetAddButton(); clearForm(); };
+    $("btnClearAll").onclick = async ()=>{ try{ await clearCommitmentsForActive(); } catch(e){ toast(e.message||e,false);} };
+
+    $("btnExportCsv").onclick = exportCSV;
+    $("btnExportPdf").onclick = exportPDF;
+
+    $("inAmount").oninput = renderAmountChips;
+    $("searchBox").oninput = async ()=>{
+      try{
+        const totals = await sendToAppScript({ action:"totals", fundId: app.activeFundId });
+        renderCommitments(Number(totals.allTotal||0));
+      } catch {
+        renderCommitments(0);
+      }
+    };
+
+    try{
+      await refreshAll();
+      toast("Loaded", true);
+      setStatus("Ready");
+    }catch(e){
+      setStatus("Error");
+      toast("Could not load: " + (e.message||e), false);
+    }
+  }
+
+  $("btnLogin").onclick = ()=>login(false);
+  $("btnRemember").onclick = ()=>login(true);
+  $("btnLogout").onclick = logout;
+  $("passInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(false); });
+  $("userInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(false); });
+
+  const saved = loadAuth();
+  if(saved && saved.user && saved.pass){
+    sendToAppScript({ action:"ping" })
+      .then(()=>{ hideLogin(); initAfterLogin(); })
+      .catch(()=>{ clearAuth(); showLogin(); });
+  } else {
+    showLogin();
+  }
+</script>
+</body>
+</html>

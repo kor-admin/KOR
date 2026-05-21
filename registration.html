@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>KOR Registration</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+body {
+        zoom: 75%; 
+        width: 133.33vw !important;
+        height: 133.33vh !important;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+    }
+
+  /* ============================
+     THEME: Professional Glass (Light Purple)
+     ============================ */
+  :root {
+    --glass-card: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(255, 255, 255, 0.8);
+    --primary: #9333ea; /* Purple-600 */
+    --text-main: #0f172a;
+    --text-muted: #475569;
+  }
+
+  body { 
+    font-family: 'Inter', sans-serif; 
+    /* LIGHT PURPLE BACKGROUND */
+    background: linear-gradient(135deg, #f3e8ff 0%, #d8b4fe 100%);
+    color: var(--text-main);
+    
+    /* FIX: Allow scrolling so top isn't cut off on small mobiles */
+    min-height: 100vh;
+    overflow-y: auto; 
+    overflow-x: hidden;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Add padding to prevent card touching edges on small screens */
+    padding: 2.5rem 1.5rem; 
+  }
+
+  /* --- Flying Logos (Fixed Position) --- */
+  .flying-area {
+    position: fixed; /* Fixed so it stays put when scrolling */
+    top: 0; left: 0; width: 100%; height: 100%;
+    overflow: hidden;
+    z-index: 0; 
+    pointer-events: none;
+  }
+  
+  .fly-item {
+    position: absolute;
+    bottom: -150px;
+    opacity: 0.15; 
+    animation: flyUp 15s linear infinite;
+  }
+
+  @keyframes flyUp {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.15; }
+    90% { opacity: 0.15; }
+    100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+  }
+
+  .fly-item:nth-child(1) { left: 10%; width: 60px; height: 60px; animation-duration: 25s; }
+  .fly-item:nth-child(2) { left: 25%; width: 40px; height: 40px; animation-duration: 18s; }
+  .fly-item:nth-child(3) { left: 50%; width: 80px; height: 80px; animation-duration: 30s; }
+  .fly-item:nth-child(4) { left: 75%; width: 50px; height: 50px; animation-duration: 22s; }
+  .fly-item:nth-child(5) { left: 90%; width: 70px; height: 70px; animation-duration: 28s; }
+
+  /* --- Glass Components --- */
+  .glass-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    background: var(--glass-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    margin: auto; /* Centers card vertically if there's space */
+  }
+
+  /* --- Animated Main Logo --- */
+  @keyframes korPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 rgba(147, 51, 234, 0); }
+    50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(147, 51, 234, 0.25); }
+    100% { transform: scale(1); box-shadow: 0 0 0 rgba(147, 51, 234, 0); }
+  }
+  .korLogo-container {
+    background: white;
+    display: grid; place-items: center;
+    box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.9);
+    animation: korPulse 3s ease-in-out infinite;
+    margin: 0 auto 1.5rem auto;
+    width: 80px; height: 80px; border-radius: 20px;
+  }
+
+  /* --- Inputs (SQUARE & COMFORTABLE SIZE) --- */
+  input {
+    width: 100% !important;
+    background: #ffffff !important;
+    /* SQUARE EDGES */
+    border-radius: 12px !important; 
+    border: 1.5px solid #cbd5e1 !important;
+    
+    /* COMFORTABLE SIZE: Easy to tap, but not huge */
+    padding: 1rem 1.25rem !important; 
+    font-size: 1rem !important;
+    
+    transition: all 0.2s ease;
+    outline: none;
+    font-weight: 500;
+    color: #1e293b;
+    box-sizing: border-box;
+  }
+  input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.15) !important;
+    position: relative;
+    z-index: 2;
+  }
+  
+  label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  /* --- Buttons --- */
+  .btn-primary {
+    background: #1e293b;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-primary:hover { background: #0f172a; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+</style>
+</head>
+
+<body>
+
+<div class="flying-area">
+  <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" alt="bg-logo" />
+  <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" alt="bg-logo" />
+  <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" alt="bg-logo" />
+  <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" alt="bg-logo" />
+  <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" alt="bg-logo" />
+</div>
+
+<div id="mainPage" class="glass-card p-8 sm:p-10 max-w-sm text-center">
+  <div class="korLogo-container">
+    <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="w-12 h-12 object-contain" alt="Logo" />
+  </div>
+  <h1 class="text-2xl font-extrabold tracking-tight mb-2 text-slate-900">Registration</h1>
+  <p class="text-sm text-slate-600 mb-8 uppercase tracking-widest font-bold">New Member Entry</p>
+
+  <button id="openFormBtn" class="btn-primary">Click here to register</button>
+</div>
+
+<div id="formPage" class="glass-card p-6 sm:p-10 max-w-md hidden">
+  <div class="korLogo-container !w-16 !h-16 !mb-6">
+    <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s180" class="w-10 h-10 object-contain" alt="Logo" />
+  </div>
+  <h2 class="text-xl font-bold mb-6 text-center text-slate-800">Registration Form</h2>
+
+  <form id="regForm" class="space-y-5" novalidate>
+    
+    <div>
+      <label>Full Name <span class="text-red-500">*</span></label>
+      <input name="name" required placeholder="Enter full name" autocomplete="name" />
+    </div>
+
+    <div>
+      <label>Mobile Number <span class="text-red-500">*</span></label>
+      <input id="contactInput" name="contact" type="tel" inputmode="numeric" placeholder="e.g. 0501234567" maxlength="20" required />
+      <p class="text-xs text-slate-500 mt-1 font-medium">Format: 0 / 966 + 9 digits</p>
+    </div>
+
+    <div>
+      <label>Birthday <span class="text-red-500">*</span></label>
+      <input type="date" name="birthday" required />
+    </div>
+
+    <input type="hidden" name="contact_key" id="contactKey" />
+
+    <div class="pt-2">
+      <button id="submitBtn" type="submit" class="btn-primary !bg-purple-600 !hover:bg-purple-700">Submit Registration</button>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // UI Elements
+  const mainPage = document.getElementById("mainPage");
+  const formPage = document.getElementById("formPage");
+  const openBtn = document.getElementById("openFormBtn");
+  const form = document.getElementById("regForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const contactInput = document.getElementById("contactInput");
+  const contactKey = document.getElementById("contactKey");
+
+  // ============================================
+  // ENGINE: LOGIC PRESERVED STRICTLY
+  // ============================================
+  const scriptURL = "https://script.google.com/macros/s/AKfycbyubBILwzSJcxbfuGcHCQFo-2PDMannzll8OgnDm5LkQsiYXYILqIFKvjiLPgAMjY0b/exec";
+
+  function digitsOnly(v) { return (v || "").toString().replace(/\D+/g, ""); }
+  function last9Digits(v) {
+    const d = digitsOnly(v);
+    return d.length < 9 ? "" : d.slice(-9);
+  }
+
+  function formatMatches(matches){
+    if (!matches || !matches.length) return "(no existing record details found)";
+    return matches.map((m, idx) => {
+      const nm = (m.name || "").toString().trim() || "(no name)";
+      const ct = (m.contact || "").toString().trim() || "(no mobile)";
+      const bd = (m.birthday || "").toString().trim() || "(no birthday)";
+      const tm = (m.time && m.time.toString) ? m.time.toString() : (m.time || "");
+      return `${idx+1}. Name: ${nm} | Mobile: ${ct} | Birthday: ${bd}${tm ? ` | Time: ${tm}` : ""}`;
+    }).join("\n");
+  }
+
+  function sanitizeAndUpdate() {
+    const cleaned = digitsOnly(contactInput.value);
+    if (contactInput.value !== cleaned) contactInput.value = cleaned;
+    contactKey.value = last9Digits(cleaned);
+  }
+
+  contactInput.addEventListener("input", sanitizeAndUpdate);
+  contactInput.addEventListener("paste", () => setTimeout(sanitizeAndUpdate, 0));
+
+  openBtn.addEventListener("click", () => {
+    mainPage.classList.add("hidden");
+    formPage.classList.remove("hidden");
+  });
+
+  function submitRegistration(forceProceed){
+    sanitizeAndUpdate();
+    const name = (form.elements["name"].value || "").trim();
+    const birthday = (form.elements["birthday"].value || "").trim();
+    const key = contactKey.value;
+
+    if (!name || !birthday || !key || key.length !== 9) {
+      alert("⚠️ Please complete all required fields and enter a valid mobile number.");
+      return Promise.resolve();
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Processing...";
+
+    const fd = new FormData(form);
+    if (forceProceed) fd.append("force", "1");
+
+    return fetch(scriptURL, { method: "POST", body: fd })
+      .then(res => res.text())
+      .then(txt => {
+        txt = (txt || "").trim();
+        let payload = null;
+        if (txt && (txt[0] === '{' || txt[0] === '[')) {
+          try { payload = JSON.parse(txt); } catch(e) { payload = null; }
+        }
+
+        const code = payload && payload.code ? String(payload.code) : txt;
+        const matches = payload && Array.isArray(payload.matches) ? payload.matches : [];
+
+        if (code === "DUPLICATE") {
+          alert("❌ Not allowed. Existing record found:\n\n" + formatMatches(matches));
+          contactInput.focus();
+        } else if (code === "NAME_EXISTS") {
+          alert("❌ Name already exist in the record.\n\nMatched record(s):\n" + formatMatches(matches));
+          form.elements["name"].focus();
+        } else if (code === "CONFLICT_NAME_MOBILE") {
+          alert("❌ This name and mobile number already exist, but the birthday is different. Please verify the birthday.\n\nMatched record(s):\n" + formatMatches(matches));
+          form.elements["birthday"].focus();
+        } else if (code === "WARN_NAME_MOBILE_BDAY_MISMATCH") {
+          const msg = "⚠️ The same NAME and MOBILE already exist, but the BIRTHDAY is different.\n\nExisting record(s):\n"
+            + formatMatches(matches) + "\n\nDo you want to proceed anyway?";
+          if (confirm(msg)) return submitRegistration(true);
+          form.elements["birthday"].focus();
+        } else if (code === "WARN_MOBILE_USED") {
+          const msg = "⚠️ Mobile number already used.\n\nExisting record(s):\n" + formatMatches(matches) + "\n\nDo you want to proceed anyway?";
+          if (confirm(msg)) return submitRegistration(true);
+          contactInput.focus();
+        } else if (code === "MISSING") {
+          alert("⚠️ Please complete all required fields.");
+        } else if (code === "SUCCESS") {
+          formPage.innerHTML = `
+            <div class="text-center">
+              <div class="korLogo-container !w-24 !h-24"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s180" class="w-14 h-14" /></div>
+              <h2 class="text-3xl text-green-600 font-extrabold mb-4 tracking-tight">Success</h2>
+              <p class="text-slate-600 font-medium text-lg mb-8">Your registration has been successfully submitted.</p>
+              <button onclick="location.reload()" class="btn-primary w-full !bg-purple-600 !hover:bg-purple-700">Register again</button>
+            </div>`;
+        } else {
+          alert("⚠️ Unexpected server response: " + txt);
+        }
+      })
+      .catch(() => {
+        alert("❌ Submission failed. Please try again.");
+      })
+      .finally(() => {
+        if (document.getElementById("submitBtn")) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Registration";
+        }
+      });
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    submitRegistration(false);
+  });
+});
+</script>
+</body>
+</html>

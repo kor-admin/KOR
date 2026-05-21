@@ -1,0 +1,484 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KOR Registration | Admin</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+
+    /* =========================================
+       SMART ZOOM SCALING (DESKTOP VS MOBILE)
+    ========================================= */
+    /* This rule applies ONLY to Desktop screens */
+    @media (min-width: 1024px) {
+        body {
+            zoom: 75%; 
+            width: 133.33vw !important;
+            min-height: 133.33vh !important; /* Allows scrolling if the list gets long! */
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    /* This rule applies ONLY to Mobile/Tablets */
+    @media (max-width: 1023px) {
+        body {
+            zoom: 100%; 
+            width: 100vw !important;
+            min-height: 100vh !important;
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    @keyframes korPulse{
+      0%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)}
+      50%{transform:scale(1.05);box-shadow:0 0 20px rgba(201,193,182,.55)}
+      100%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)}
+    }
+    .korLogo-lg {
+      width:64px; height:64px; border-radius:18px;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      display:grid; place-items:center;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      border:1px solid rgba(255,255,255,0.8);
+      animation: korPulse 3s ease-in-out infinite;
+      margin: 0 auto 1.5rem auto;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .glass-card-login {
+      border-radius: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+
+<body class="bg-[#F8FAFC] min-h-screen">
+
+  <div id="securityOverlay" class="min-h-screen flex items-center justify-center p-6 fixed inset-0 z-[60] bg-[#F8FAFC]">
+    <div class="w-full max-w-md glass-card glass-card-login shadow-2xl p-8 md:p-10">
+      <div class="text-center mb-8">
+        <div class="korLogo-lg">
+          <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="w-10 h-10 rounded-lg" alt="L" onerror="this.src='https://via.placeholder.com/40'"/>
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Registration Admin</h1>
+        <p class="text-[11px] uppercase tracking-widest text-slate-400 font-bold mt-1">Authorized Access Only</p>
+      </div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="text-xs font-bold uppercase text-slate-500 mb-2 block">Email</label>
+          <input id="loginEmail" type="email" class="w-full bg-slate-50 border-slate-200 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium" placeholder="Enter email address" autocomplete="username" />
+        </div>
+        
+        <div>
+          <label class="text-xs font-bold uppercase text-slate-500 mb-2 block">Password</label>
+          <div class="relative">
+            <input id="loginPass" type="password" class="w-full bg-slate-50 border-slate-200 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pr-12" placeholder="••••••••" autocomplete="current-password" />
+            <button type="button" onclick="const p=document.getElementById('loginPass');p.type=(p.type==='password')?'text':'password'" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 focus:outline-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="loginMsg" class="text-center text-xs font-bold text-red-500 min-h-[1rem]"></div>
+
+        <button id="loginBtn" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl shadow-lg transition-all transform active:scale-[0.98] mt-2">
+          Sign In
+        </button>
+        
+        <div class="text-center mt-2">
+            <button onclick="window.resetUserPassword()" class="text-xs text-slate-400 hover:text-slate-600 underline bg-transparent border-none cursor-pointer">Forgot Password?</button>
+        </div>
+      </div>
+      <p class="text-center text-[10px] text-slate-400 mt-8 uppercase tracking-widest font-medium">© KOR Management System</p>
+    </div>
+  </div>
+
+  <div id="appLayout" class="hidden min-h-screen p-6">
+    <div class="max-w-6xl mx-auto glass-card p-6 rounded-2xl shadow-lg">
+
+      <div class="korLogo-lg">
+        <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="w-10 h-10 rounded-lg" alt="L" />
+      </div>
+
+      <h1 class="text-3xl font-bold text-center mb-1">KOR Members</h1>
+      <h2 class="text-xl text-center mb-1">Admin Dashboard</h2>
+      <p class="text-center text-red-600 font-semibold mb-4">Confidential – Do Not Share</p>
+
+      <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-3">
+        <div class="text-sm text-gray-600">
+          👥 Total Registered Members: <span id="totalCount" class="font-semibold">0</span>
+        </div>
+        <button onclick="app.logout()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full md:w-auto">Logout</button>
+      </div>
+
+      <div class="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl shadow-sm p-4">
+        <h3 class="text-xl font-semibold mb-2">🎈 Upcoming Birthdays</h3>
+        <div id="birthdayReminder" class="space-y-2 text-sm text-gray-800">Loading birthdays...</div>
+      </div>
+
+      <div class="flex flex-col md:flex-row gap-3 mb-6">
+        <button onclick="window.app.exportPDF('current')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full md:w-auto">📄 Export Current Month (PDF)</button>
+        <button onclick="window.app.exportPDF('next')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full md:w-auto">📄 Export Next Month (PDF)</button>
+      </div>
+
+      <div class="mb-4">
+        <input type="text" id="searchInput" placeholder="Search by name or contact number..." class="w-full md:w-1/2 border rounded-xl px-4 py-2" oninput="window.app.handleSearch()" />
+      </div>
+
+      <div class="overflow-y-auto max-h-[500px] border rounded-xl shadow-inner bg-white/50">
+        <table class="min-w-full">
+          <thead class="bg-gray-200 sticky top-0">
+            <tr class="text-xs md:text-sm">
+              <th class="border px-4 py-2">Full Name</th>
+              <th class="border px-4 py-2">Contact Number</th>
+              <th class="border px-4 py-2">Birthday</th>
+              <th class="border px-4 py-2">Registered At</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="text-center">
+            <tr><td colspan="4" class="py-4">Loading data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.app = {
+      boot: function() { startApp(); },
+      logout: function() {
+         if(confirm("Log out of Admin Session?")) {
+            // ✅ CALL THE MODULE FUNCTION SAFELY
+            if(window.logoutUser) window.logoutUser();
+            else window.location.reload(); 
+         }
+      },
+      handleSearch: () => handleSearch(),
+      exportPDF: (t) => exportBirthdaysPDF(t)
+    };
+    const BASE_URL = 'https://script.google.com/macros/s/AKfycbz9A087f9M5fqqn8EAA7MQgSmYfrcyxNt0RQwiIm-6OD9zzq0LHbea9PZDduWH3rDg/exec';
+    const REFRESH_INTERVAL = 30000;
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    let allRegistrations = [];
+    function startApp() {
+      const ACCESS_KEY = localStorage.getItem('korAdminKey');
+      if (!ACCESS_KEY) return; 
+
+      const DATA_URL = `${BASE_URL}?key=${ACCESS_KEY}`;
+      loadData(DATA_URL);
+      setInterval(() => loadData(DATA_URL), REFRESH_INTERVAL);
+
+      const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+      let __idleTimer = null;
+      function __resetIdleTimer(){
+        if (__idleTimer) clearTimeout(__idleTimer);
+        __idleTimer = setTimeout(() => window.app.logout(), IDLE_TIMEOUT_MS);
+      }
+      ["mousemove","mousedown","keydown","scroll","touchstart"].forEach(evt => {
+        document.addEventListener(evt, __resetIdleTimer, { passive:true });
+      });
+      __resetIdleTimer();
+    }
+
+    function loadData(url) {
+      fetch(url)
+        .then(res => {
+          // ✅ FIX: Handle standard HTTP errors first
+          if (!res.ok) throw new Error('Unauthorized or Network Error');
+          return res.json();
+        })
+        .then(data => {
+          // ✅ FIX: Handle JSON errors from backend (e.g., if token expired)
+          if (data.error || data.ok === false) {
+             throw new Error(data.error || 'Backend Error');
+          }
+          allRegistrations = data;
+          renderBirthdayReminders(data);
+          handleSearch();
+        })
+        .catch((e) => {
+          console.error(e);
+          // Only show error if table is empty to avoid flickering
+          if(allRegistrations.length === 0) {
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="4" class="py-4 text-red-600">Failed to load data. Session may be expired.</td></tr>';
+          }
+        });
+    }
+
+    function updateTotalCount(data) {
+      document.getElementById('totalCount').textContent = data.length;
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="py-4">No records found</td></tr>';
+        return;
+      }
+
+      data.forEach(row => {
+        const birthday = row.birthday ? new Date(row.birthday).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'N/A';
+        const registered = row.time ? new Date(row.time).toLocaleString() : 'N/A';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="border px-4 py-2 text-xs md:text-sm">${row.name}</td>
+          <td class="border px-4 py-2 text-xs md:text-sm">${row.contact}</td>
+          <td class="border px-4 py-2 text-xs md:text-sm">${birthday}</td>
+          <td class="border px-4 py-2 text-xs md:text-sm">${registered}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function handleSearch() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (query === '') {
+        renderTable(allRegistrations);
+        updateTotalCount(allRegistrations);
+        return;
+      }
+      const filtered = allRegistrations.filter(row => {
+        const name = String(row.name || '').toLowerCase();
+        const contact = String(row.contact || '').toLowerCase();
+        return name.includes(query) || contact.includes(query);
+      });
+      renderTable(filtered);
+      updateTotalCount(filtered);
+    }
+
+    function renderBirthdayReminders(data) {
+      const container = document.getElementById('birthdayReminder');
+      container.innerHTML = '';
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const nextMonth = (currentMonth + 1) % 12;
+      const allowedMonths = [currentMonth, nextMonth];
+      const grouped = {};
+
+      data.forEach(person => {
+        if (!person.birthday) return;
+        const date = new Date(person.birthday);
+        const month = date.getMonth();
+        if (!allowedMonths.includes(month)) return;
+        if (!grouped[month]) grouped[month] = [];
+        grouped[month].push({ name: person.name, month: month, day: date.getDate() });
+      });
+      if (Object.keys(grouped).length === 0) {
+        container.textContent = 'No upcoming birthdays this or next month';
+        return;
+      }
+
+      allowedMonths.forEach(month => {
+        if (!grouped[month]) return;
+        const block = document.createElement('div');
+        block.innerHTML = `<div class="font-semibold mb-1">${MONTHS[month]}</div><ul class="list-disc ml-6">${grouped[month].sort((a, b) => a.day - b.day).map(p => `<li>${p.name} – ${MONTHS[p.month]} ${p.day}</li>`).join('')}</ul>`;
+        container.appendChild(block);
+      });
+    }
+
+    function exportBirthdaysPDF(type) {
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const targetMonth = type === 'current' ? currentMonth : (currentMonth + 1) % 12;
+      const filtered = allRegistrations.filter(p => p && p.birthday).map(p => {
+          const d = new Date(p.birthday);
+          if (isNaN(d)) return null;
+          return { ...p, _bdayDate: d };
+        }).filter(p => p && p._bdayDate.getMonth() === targetMonth);
+      if (filtered.length === 0) { alert('No birthdays found for selected month.'); return; }
+
+      filtered.sort((a, b) => a._bdayDate.getDate() - b._bdayDate.getDate());
+      const rows = filtered.map(p => {
+        const niceDate = p._bdayDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' });
+        return [String(p.name ?? ''), String(p.contact ?? ''), niceDate];
+      });
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const monthName = MONTHS[targetMonth];
+      const title = `KOR Birthdays - ${monthName}`;
+      const generated = new Date().toLocaleString();
+
+      doc.setFillColor(15, 23, 42); doc.rect(0, 0, 600, 100, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.text(title, 40, 50);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(203, 213, 225);
+      doc.text(`Generated: ${generated}`, 40, 70); doc.text(`Total Celebrants: ${rows.length}`, 40, 84);
+      doc.setTextColor(0, 0, 0);
+
+      doc.autoTable({
+        startY: 120,
+        head: [['Full Name', 'Contact Number', 'Birthday']],
+        body: rows,
+        styles: { font: 'helvetica', fontSize: 10, cellPadding: 8, lineColor: [226, 232, 240], lineWidth: 0.5 },
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: { 0: { fontStyle: 'bold', textColor: [51, 65, 85] } },
+        margin: { left: 40, right: 40 }
+      });
+      doc.save(`Birthdays_${monthName}.pdf`);
+    }
+  </script>
+
+<script type="module">
+    // FIX: Updated to 10.7.1 for consistency
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA",
+      authDomain: "slidesync-37cd4.firebaseapp.com",
+      databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "slidesync-37cd4",
+      storageBucket: "slidesync-37cd4.firebasestorage.app",
+      messagingSenderId: "996754972458",
+      appId: "1:996754972458:web:7f8be6880c3463ac6a4853",
+      measurementId: "G-GCBS3X7STT"
+    };
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const firestore = getFirestore(firebaseApp);
+
+    // LOGIN BUTTON
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPass').value;
+        const msg = document.getElementById('loginMsg');
+        const btn = document.getElementById('loginBtn');
+
+        if(!email || !pass) { msg.textContent = "Please enter email and password."; return; }
+        msg.textContent = "";
+        btn.textContent = "Verifying...";
+       
+        signInWithEmailAndPassword(auth, email, pass).catch((error) => {
+            msg.textContent = "Error: " + error.message;
+            btn.textContent = "Log In"; 
+        });
+    });
+
+    // AUTH GATEKEEPER (FIXED FOR MULTI-ROLE)
+    onAuthStateChanged(auth, async (user) => {
+        const overlay = document.getElementById('securityOverlay');
+        const appLayout = document.getElementById('appLayout');
+        const msg = document.getElementById('loginMsg');
+
+        if (user) {
+            try {
+                const userRef = doc(firestore, "users", user.uid);
+                const snap = await getDoc(userRef);
+
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.accountStatus === 'disabled') throw new Error("Account deactivated.");
+
+                    // --- 🔥 MULTI-ROLE FIX STARTS HERE ---
+                    let userRoles = [];
+
+                    // 1. Get Legacy Single Role
+                    if (data.role) userRoles.push(String(data.role).toLowerCase().trim());
+
+                    // 2. Get New Multi-Roles Array
+                    if (data.roles && Array.isArray(data.roles)) {
+                        const cleanRoles = data.roles.map(r => String(r).toLowerCase().trim());
+                        userRoles = [...userRoles, ...cleanRoles];
+                    }
+
+                    // 3. Define Allowed Roles for THIS Page
+                    // (Add any other roles that should see the Registration Admin)
+                    const ALLOWED_ACCESS = ['admin', 'attendant1', 'attendant2', 'attendant3'];
+                    // 4. Check if ANY user role is in the allowed list
+                    const hasPermission = userRoles.some(r => ALLOWED_ACCESS.includes(r));
+
+                    if (hasPermission) {
+                        // SAVE TOKEN & UNLOCK
+                        const token = await user.getIdToken();
+                        localStorage.setItem('korAdminKey', token);
+                        
+                        overlay.style.display = 'none';
+                        appLayout.classList.remove('hidden');
+                        
+                        if(!window.appInitialized && window.app && window.app.boot) {
+                            window.app.boot();
+                            window.appInitialized = true;
+                        }
+                    } else {
+                        throw new Error("Access Denied: You do not have permission.");
+                    }
+                    // --- 🔥 MULTI-ROLE FIX ENDS HERE ---
+
+                } else {
+                    throw new Error("User profile not found.");
+                }
+            } catch (e) {
+                console.error(e);
+                msg.textContent = e.message;
+                signOut(auth);
+            }
+        } else {
+            // LOCK SCREEN
+            overlay.style.display = 'flex';
+            appLayout.classList.add('hidden');
+            localStorage.removeItem('korAdminKey');
+        }
+    });
+
+    window.logoutUser = () => {
+      signOut(auth).then(() => {
+        localStorage.removeItem('korAdminKey');
+        window.location.reload();
+      });
+    };
+
+    // ==========================================
+    // 4. RESET PASSWORD LOGIC (Added Feature)
+    // ==========================================
+    window.resetUserPassword = async () => {
+        const email = prompt("Enter your email address to reset password:");
+        if (!email) return;
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert(`✅ Password reset email sent to: ${email}\n\n⚠️ IMPORTANT: Please check your SPAM/JUNK folder if you do not see it in your inbox.`);
+        } catch (error) {
+            alert("Error: " + error.message);
+        }
+    };
+
+    // ==========================================
+    // 5. LOGIN TRACKER (Auto-Update Last Seen)
+    // ==========================================
+    // --- TRACKER FIX APPLIED ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            updateDoc(doc(firestore, "users", user.uid), {
+                lastLogin: serverTimestamp()
+            }).then(() => {
+                console.log("Login timestamp updated successfully.");
+            }).catch((error) => {
+                console.error("Failed to update timestamp:", error);
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

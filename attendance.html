@@ -1,0 +1,681 @@
+ <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KOR Attendance | System</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+
+/* =========================================
+       SMART ZOOM SCALING (DESKTOP VS MOBILE)
+    ========================================= */
+    /* This rule applies ONLY to Desktop screens */
+    @media (min-width: 1024px) {
+        body {
+            zoom: 75%; 
+            width: 133.33vw !important;
+            min-height: 133.33vh !important; /* Allows scrolling if the list gets long! */
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    /* This rule applies ONLY to Mobile/Tablets */
+    @media (max-width: 1023px) {
+        body {
+            zoom: 100%; 
+            width: 100vw !important;
+            min-height: 100vh !important;
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    /* ANIMATIONS */
+    @keyframes korPulse{
+      0%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)}
+      50%{transform:scale(1.05);box-shadow:0 0 20px rgba(201,193,182,.55)}
+      100%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)}
+    }
+
+    /* COMPONENT STYLES */
+    .korLogo-lg {
+      width:64px; height:64px; border-radius:18px;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      display:grid; place-items:center;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      border:1px solid rgba(255,255,255,0.8);
+      animation: korPulse 3s ease-in-out infinite;
+      margin: 0 auto 1.5rem auto;
+    }
+    .korLogo-sm {
+      width:48px; height:48px; border-radius:14px;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      display:grid; place-items:center;
+      animation: korPulse 3s ease-in-out infinite;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    
+    .glass-card-login {
+      border-radius: 2rem;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+
+<body class="bg-[#F8FAFC] min-h-screen">
+
+  <script type="module">
+    // 1. FIREBASE IMPORTS (FIXED: Updated to 10.7.1)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 2. CONFIGURATION
+    const firebaseConfig = {
+      apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA",
+      authDomain: "slidesync-37cd4.firebaseapp.com",
+      databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "slidesync-37cd4",
+      storageBucket: "slidesync-37cd4.firebasestorage.app",
+      messagingSenderId: "996754972458",
+      appId: "1:996754972458:web:7f8be6880c3463ac6a4853",
+      measurementId: "G-GCBS3X7STT"
+    };
+    // 3. INITIALIZE
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const firestore = getFirestore(firebaseApp);
+
+    // 4. LOGIN LOGIC
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPass').value;
+        const msg = document.getElementById('loginMsg');
+        const btn = document.getElementById('loginBtn');
+
+        if(!email || !pass) { msg.textContent = "Please enter email and password."; return; }
+
+        msg.textContent = "";
+        btn.textContent = "Verifying...";
+        
+        signInWithEmailAndPassword(auth, email, pass).catch((error) => {
+            msg.textContent = "Error: " + error.message;
+            btn.textContent = "Log In"; 
+        });
+    });
+
+    // 5. AUTH LISTENER (The Gatekeeper - 🔥 UPDATED FOR MULTI-ROLE)
+    onAuthStateChanged(auth, async (user) => {
+        const overlay = document.getElementById('securityOverlay');
+        const msg = document.getElementById('loginMsg');
+
+        // CRITICAL: Set the global auth object immediately so api() can find it
+        window.firebaseAuth = auth; 
+
+        if (user) {
+            try {
+                // --- Firestore Data Check ---
+                const userRef = doc(firestore, "users", user.uid);
+                const snap = await getDoc(userRef);
+
+                if (snap.exists()) {
+                    const data = snap.data();
+                    
+                    // CHECK 1: IS ACCOUNT DISABLED?
+                    if (data.accountStatus === 'disabled') {
+                        throw new Error("Your account has been deactivated. Please contact Admin.");
+                    }
+
+                    // --- 🔥 MULTI-ROLE FIX STARTS HERE ---
+                    let userRoles = [];
+                    // 1. Get Legacy Single Role
+                    if (data.role) userRoles.push(String(data.role).toLowerCase().trim());
+                    // 2. Get New Multi-Roles Array
+                    if (data.roles && Array.isArray(data.roles)) {
+                        const cleanRoles = data.roles.map(r => String(r).toLowerCase().trim());
+                        userRoles = [...userRoles, ...cleanRoles];
+                    }
+                    
+                    // Remove duplicates
+                    userRoles = [...new Set(userRoles)];
+                    // 3. Define Allowed Roles for THIS App
+                    const ALLOWED_ACCESS = ['admin', 'attendant1', 'attendant2', 'attendant3'];
+                    // 4. Check if ANY user role is in the allowed list
+                    const hasPermission = userRoles.some(r => ALLOWED_ACCESS.includes(r));
+
+                    if (hasPermission) {
+                        // Update UI Info
+                        if(document.getElementById('who')) document.getElementById('who').textContent = data.displayName || user.email;
+                        if(document.getElementById('role')) document.getElementById('role').textContent = userRoles.join(', ').toUpperCase();
+
+                        unlockApp();
+                    } else {
+                        throw new Error("Access Denied: You do not have the required permissions.");
+                    }
+                    // --- 🔥 MULTI-ROLE FIX ENDS HERE ---
+
+                } else {
+                    throw new Error("User profile not found in database.");
+                }
+            } catch (e) {
+                console.error(e);
+                // Show error message on the login screen
+                msg.textContent = e.message;
+                // Force sign out so they can't stay logged in
+                signOut(auth);
+            }
+        } else {
+            // Lock the screen if no user
+            overlay.style.display = 'flex';
+            if(document.getElementById("appLayout")) {
+                document.getElementById("appLayout").classList.add("hidden");
+            }
+        }
+    });
+
+    // Helper function to handle the UI unlocking
+    function unlockApp() {
+        const overlay = document.getElementById('securityOverlay');
+        overlay.style.display = 'none';
+        document.getElementById("appLayout").classList.remove("hidden");
+        if(!window.appInitialized) {
+            window.app.boot();
+            window.appInitialized = true;
+        }
+    }
+
+    // 6. EXPORT AUTH TO GLOBAL SCOPE (For App to use)
+    window.firebaseAuth = auth;
+
+    // ==========================================
+    // 7. RESET PASSWORD LOGIC (Added Feature)
+    // ==========================================
+    window.resetUserPassword = async () => {
+        const email = prompt("Enter your email address to reset password:");
+        if (!email) return;
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert(`✅ Password reset email sent to: ${email}\n\n⚠️ IMPORTANT: Please check your SPAM/JUNK folder if you do not see it in your inbox.`);
+        } catch (error) {
+            alert("Error: " + error.message);
+        }
+    };
+
+    // ==========================================
+    // 8. LOGIN TRACKER (Auto-Update Last Seen)
+    // ==========================================
+    // --- TRACKER FIX APPLIED ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            updateDoc(doc(firestore, "users", user.uid), {
+                lastLogin: serverTimestamp()
+            }).then(() => {
+                console.log("Login timestamp updated successfully.");
+            }).catch((error) => {
+                console.error("Failed to update timestamp:", error);
+            });
+        }
+    });
+  </script>
+
+  <div id="securityOverlay" class="min-h-screen flex items-center justify-center p-6 fixed inset-0 z-[60] bg-[#F8FAFC]">
+    <div class="w-full max-w-md glass-card glass-card-login shadow-2xl p-8 md:p-10">
+      <div class="text-center mb-8">
+        <div class="korLogo-lg">
+          <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="w-10 h-10 rounded-lg" alt="L" onerror="this.src='https://via.placeholder.com/40'"/>
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">KOR Attendance</h1>
+        <p class="text-[11px] uppercase tracking-widest text-slate-400 font-bold mt-1">Authorized Access Only</p>
+      </div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="text-xs font-bold uppercase text-slate-500 mb-2 block">Email</label>
+          <input id="loginEmail" type="email" class="w-full bg-slate-50 border-slate-200 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium" placeholder="Enter email address" autocomplete="username" />
+        </div>
+        
+        <div>
+          <label class="text-xs font-bold uppercase text-slate-500 mb-2 block">Password</label>
+          <div class="relative">
+            <input id="loginPass" type="password" class="w-full bg-slate-50 border-slate-200 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium pr-12" placeholder="••••••••" autocomplete="current-password" />
+            <button type="button" onclick="const p=document.getElementById('loginPass');p.type=(p.type==='password')?'text':'password'" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 focus:outline-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="loginMsg" class="text-center text-xs font-bold text-red-500 min-h-[1rem]"></div>
+
+        <button id="loginBtn" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl shadow-lg transition-all transform active:scale-[0.98] mt-2">
+          Sign In
+        </button>
+
+        <div class="text-center mt-2">
+            <button onclick="window.resetUserPassword()" class="text-xs text-slate-400 hover:text-slate-600 underline bg-transparent border-none cursor-pointer">Forgot Password?</button>
+        </div>
+      </div>
+
+      <p class="text-center text-[10px] text-slate-400 mt-8 uppercase tracking-widest font-medium">
+        © KOR Management System
+      </p>
+    </div>
+  </div>
+
+  <div id="appLayout" class="hidden min-h-screen pb-12">
+    <nav class="w-full border-b bg-white/70 backdrop-blur-md sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="korLogo-sm"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="w-7 h-7" alt="L" /></div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight">KOR Attendance</h1>
+            <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Management Portal</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="hidden md:block text-right">
+            <p id="who" class="text-sm font-bold leading-none"></p>
+            <span id="role" class="text-[10px] text-emerald-600 font-bold uppercase"></span>
+          </div>
+          <button id="btnLogout" class="bg-slate-900 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all">Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        <div class="lg:col-span-4 glass-card p-5">
+          <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Service Date</label>
+          <input id="serviceDate" type="date" class="w-full bg-slate-50 border-slate-200 border rounded-xl px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+    
+        <div class="lg:col-span-8 glass-card p-5">
+          <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Search Member</label>
+          <div class="relative">
+            <input id="searchBox" class="w-full bg-slate-50 border-slate-200 border rounded-xl px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type name to add to queue..." autocomplete="off" />
+            <div id="dropdown" class="relative"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-5">
+          <div class="glass-card overflow-hidden">
+            <div class="bg-white px-6 py-5 border-b flex justify-between items-center">
+              <h2 class="text-lg font-extrabold">Queue <span id="queueCountBadge" class="ml-2 text-xs bg-slate-100 px-2 py-1 rounded-full text-slate-500">0</span></h2>
+              <button id="btnClearQueue" class="text-xs font-bold text-slate-400 hover:text-red-500 uppercase tracking-tighter">Clear All</button>
+            </div>
+            <div class="p-4 bg-slate-50/30 min-h-[300px]">
+              <div id="queueEmpty" class="py-20 text-center text-slate-400 text-sm font-medium">Search names to fill the queue</div>
+              <ul id="queueList" class="space-y-3 max-h-[500px] overflow-auto no-scrollbar hidden"></ul>
+            </div>
+          
+            <div class="p-4 border-t bg-white">
+              <button id="btnMarkAll" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-100 disabled:opacity-50 flex items-center justify-center gap-3">
+                <span id="markAllSpinner" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                <span id="markAllLabel">Mark All Present</span>
+              </button>
+              <div id="queueProgress" class="mt-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div class="glass-card overflow-hidden">
+            <div class="bg-white px-6 py-5 border-b flex justify-between items-center">
+              <div>
+                 <h2 class="text-lg font-extrabold">Attendees</h2>
+                <p class="text-xs text-slate-500"><span id="presentCount" class="font-bold text-blue-600">0</span> marked present today</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="btnRefresh" class="bg-slate-100 p-2.5 rounded-xl hover:bg-slate-200">
+                   <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+                <button id="btnExport" class="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-100">Export PDF</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+                  <tr>
+                    <th class="px-6 py-4">Member</th>
+                    <th class="px-6 py-4">Time</th>
+                    <th class="px-6 py-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody" class="divide-y divide-slate-100">
+                   <tr><td colspan="3" class="px-6 py-20 text-center text-slate-400">Loading attendees...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="btnDebug" class="fixed bottom-6 right-6 bg-white border shadow-lg p-3 rounded-full hover:bg-slate-50 transition-all text-slate-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+      </button>
+    </main>
+  </div>
+
+  <div id="dbgModal" class="fixed inset-0 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 z-[100]">
+    <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">System Logs</h2>
+        <button id="btnDbgClose" class="text-slate-400">Close</button>
+      </div>
+      <div class="space-y-4">
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-slate-50 p-3 rounded-xl border text-center">
+            <p class="text-[10px] uppercase font-bold text-slate-400">Members</p>
+            <p id="dbgMembers" class="font-bold">0</p>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border text-center">
+            <p class="text-[10px] uppercase font-bold text-slate-400">Date-Map</p>
+            <p id="dbgKeys" class="font-bold">0</p>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl border text-center">
+            <p class="text-[10px] uppercase font-bold text-slate-400">Present</p>
+            <p id="dbgPresent" class="font-bold">0</p>
+          </div>
+        </div>
+        <pre id="dbgRes" class="text-[10px] bg-slate-900 text-emerald-400 p-4 rounded-xl overflow-auto max-h-60"></pre>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 hidden bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl text-sm font-bold z-[100]"></div>
+
+  <script>
+    // ------------------------------------------
+    // STATE MANAGEMENT
+    // ------------------------------------------
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbwSQhIN0eUJ9Rh0xugJQSQLvvuTO6zc3MFvdwionAXwb8KWXZZspUJNFy0aAGQF_6126g/exec";
+    const STORE_TOKEN = "KOR_ATT_TOKEN";
+    
+    let allMembers = [];
+    let latestMap = {};
+    let queue = [];
+    let __dbgLastRes = null;
+    // Helpers
+    const $ = (id) => document.getElementById(id);
+    function toast(msg){
+      const t = $("toast"); t.textContent = msg; t.classList.remove("hidden");
+      clearTimeout(window.__toastT); window.__toastT = setTimeout(()=>t.classList.add("hidden"), 3000);
+    }
+    function ymdToday(){ return new Date().toISOString().split('T')[0]; }
+    function fmtTime(v){
+      if(!v) return "—";
+      const d = new Date(v);
+      return isNaN(d) ? "—" : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ------------------------------------------
+    // API CALLS (Compatible with Auth Module)
+    // ------------------------------------------
+    async function apiGet(action, params = {}){
+      const u = new URL(BASE_URL);
+      u.searchParams.set("action", action);
+      
+      // Attempt to get token from storage first, or global object
+      let token = localStorage.getItem(STORE_TOKEN);
+      if(!token && window.firebaseAuth?.currentUser) {
+         token = await window.firebaseAuth.currentUser.getIdToken();
+      }
+
+      if(token) u.searchParams.set("token", token);
+      Object.keys(params).forEach(k => u.searchParams.set(k, params[k]));
+      try {
+        const res = await fetch(u);
+        const data = await res.json();
+        // Check for backend token error
+        if (data.error === "INVALID_TOKEN" || data.error === "AUTH_FAILED") {
+            if(window.firebaseAuth) window.firebaseAuth.signOut();
+            return { ok: false };
+        }
+        __dbgLastRes = data;
+        __dbgUpdate();
+        return data;
+      } catch(e) { 
+        __dbgLastRes = e.message; __dbgUpdate(); return {ok:false};
+      }
+    }
+
+    async function apiPost(action, payload = {}){
+      const form = new URLSearchParams();
+      form.set("action", action);
+      
+      let token = localStorage.getItem(STORE_TOKEN);
+      if(!token && window.firebaseAuth?.currentUser) {
+         token = await window.firebaseAuth.currentUser.getIdToken();
+      }
+
+      if(token) form.set("token", token);
+      Object.keys(payload).forEach(k => form.set(k, payload[k]));
+      try {
+        const res = await fetch(BASE_URL, { method: "POST", body: form });
+        const data = await res.json();
+        if (data.error === "INVALID_TOKEN" || data.error === "AUTH_FAILED") {
+            if(window.firebaseAuth) window.firebaseAuth.signOut();
+            return { ok: false };
+        }
+        __dbgLastRes = data;
+        __dbgUpdate();
+        return data;
+      } catch(e) { 
+        __dbgLastRes = e.message; __dbgUpdate(); return {ok:false};
+      }
+    }
+
+    // ------------------------------------------
+    // QUEUE LOGIC
+    // ------------------------------------------
+    function updateQueueUI(){
+      const ul = $("queueList"), empty = $("queueEmpty"), btnAll = $("btnMarkAll");
+      const has = queue.length > 0;
+      empty.classList.toggle("hidden", has);
+      ul.classList.toggle("hidden", !has);
+      btnAll.disabled = !has;
+      $("queueCountBadge").textContent = queue.length;
+      ul.innerHTML = queue.map(item => `
+        <li class="bg-white p-4 rounded-xl border flex justify-between items-center group">
+          <div>
+            <p class="font-bold text-slate-800">${item.name}</p>
+            <p class="text-[10px] font-mono text-slate-400 uppercase">${item._status}</p>
+          </div>
+          <button onclick="window.removeFromQueue('${item.memberKey}')" class="text-slate-300 hover:text-red-500 p-2">×</button>
+        </li>`).join("");
+    }
+
+    window.addToQueue = (m) => {
+      if(queue.some(x => x.memberKey === m.memberKey)) return toast("Already in queue");
+      queue.push({ ...m, _status: "queued" });
+      updateQueueUI();
+    };
+
+    window.removeFromQueue = (key) => {
+      queue = queue.filter(x => x.memberKey !== key);
+      updateQueueUI();
+    };
+
+    $("btnMarkAll").onclick = async () => {
+      const date = $("serviceDate").value || ymdToday();
+      const spin = $("markAllSpinner"), lbl = $("markAllLabel");
+      spin.classList.remove("hidden"); lbl.textContent = "Processing...";
+      for(let item of queue){
+        if(item._status === "done") continue;
+        item._status = "processing"; updateQueueUI();
+        const res = await apiPost("mark", { 
+          date, memberKey: item.memberKey, name: item.name,
+          contactDigits: item.contactDigits || "", birthday: item.birthday || ""
+        });
+        item._status = res.ok ? "done" : "error";
+        updateQueueUI();
+      }
+      spin.classList.add("hidden"); lbl.textContent = "Mark All Present";
+      await loadAttendance();
+      queue = queue.filter(x => x._status !== "done");
+      updateQueueUI();
+    };
+    // ------------------------------------------
+    // LOADERS & RENDERERS
+    // ------------------------------------------
+    async function loadMembers(){
+      const data = await apiGet("members");
+      if(data.ok) allMembers = data.members;
+    }
+
+    async function loadAttendance(){
+      const date = $("serviceDate").value || ymdToday();
+      const data = await apiGet("attendance", { date });
+      if(data.ok){
+        latestMap = {};
+        data.attendance.forEach(x => latestMap[x.memberKey] = x);
+        renderTable();
+      }
+      __dbgUpdate();
+    }
+
+    function renderTable(){
+      const date = $("serviceDate").value || ymdToday();
+      const rows = Object.values(latestMap).filter(x => x.serviceDate === date && x.status === "PRESENT");
+      $("presentCount").textContent = rows.length;
+      $("tbody").innerHTML = rows.length ?
+        rows.map(r => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-6 py-4">
+            <p class="font-bold text-slate-800">${r.name}</p>
+            <p class="text-[10px] text-slate-400 font-mono">${r.memberKey}</p>
+          </td>
+          <td class="px-6 py-4 text-slate-500">${fmtTime(r.markedAt)}</td>
+          <td class="px-6 py-4 text-right">
+            <button onclick="window.undoMark('${r.memberKey}', '${r.name}')" class="text-red-400 font-bold hover:text-red-600">Undo</button>
+          </td>
+        </tr>`).join("") : '<tr><td colspan="3" class="px-6 py-20 text-center text-slate-400">No attendance for this date</td></tr>';
+    }
+
+    window.undoMark = async (key, name) => {
+      if(!confirm(`Undo attendance for ${name}?`)) return;
+      const date = $("serviceDate").value || ymdToday();
+      const res = await apiPost("undo", { date, memberKey: key, name });
+      if(res.ok){ toast("Removed"); loadAttendance();
+      }
+    };
+
+    // ------------------------------------------
+    // SEARCH & EXPORT
+    // ------------------------------------------
+    $("searchBox").oninput = (e) => {
+      const q = e.target.value.toLowerCase();
+      if(q.length < 2) { $("dropdown").innerHTML = ""; return; }
+      const hits = allMembers.filter(m => m.name.toLowerCase().includes(q)).slice(0, 6);
+      $("dropdown").innerHTML = hits.map(m => `
+        <button onclick='window.addToQueue(${JSON.stringify(m)}); document.getElementById("searchBox").value=""; document.getElementById("dropdown").innerHTML="";' 
+          class="w-full text-left px-4 py-3 bg-white border-b hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl flex justify-between">
+          <span class="font-bold">${m.name}</span>
+          <span class="text-xs text-slate-400 font-mono">${m.memberKey}</span>
+        </button>`).join("");
+    };
+
+    $("btnExport").onclick = async () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const date = $("serviceDate").value || ymdToday();
+      const rows = Object.values(latestMap)
+        .filter(x => x.serviceDate === date && x.status === "PRESENT")
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((r, index) => [
+          index + 1, r.name, fmtTime(r.markedAt), r.markedBy || 'System'
+        ]);
+      if (rows.length === 0) { toast("No data to export."); return; }
+
+      doc.setFillColor(30, 41, 59);
+      doc.rect(0, 0, 600, 80, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22); doc.setFont("helvetica", "bold");
+      doc.text("KOR ATTENDANCE REPORT", 40, 45);
+      
+      doc.setFontSize(10); doc.setFont("helvetica", "normal");
+      doc.setTextColor(200, 200, 200);
+      doc.text(`SERVICE DATE: ${date.toUpperCase()}`, 40, 62);
+      doc.text(`GENERATED: ${new Date().toLocaleString().toUpperCase()}`, 40, 72);
+
+      doc.setFillColor(51, 65, 85);
+      doc.roundedRect(440, 20, 120, 45, 10, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8); doc.text("TOTAL ATTENDEES", 455, 35);
+      doc.setFontSize(18); doc.text(`${rows.length}`, 455, 56);
+      doc.autoTable({
+        startY: 110,
+        head: [['#', 'Member Name', 'Logging Time', 'Attendant']],
+        body: rows,
+        theme: 'striped',
+        headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold', halign: 'left', cellPadding: 12 },
+        bodyStyles: { fontSize: 9, cellPadding: 8, textColor: [51, 65, 85] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: { 0: { cellWidth: 30 }, 2: { cellWidth: 100 }, 3: { cellWidth: 100 } },
+        margin: { left: 40, right: 40 },
+        didDrawPage: function(data) {
+          doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+          doc.text(`Page ${doc.internal.getNumberOfPages()}`, data.settings.margin.left, doc.internal.pageSize.height - 20);
+          doc.text("KOR Attendance System - Confidential Internal Document", 350, doc.internal.pageSize.height - 20);
+        }
+      });
+      doc.save(`KOR_Report_${date}.pdf`);
+      toast("Professional PDF Generated ✅");
+    };
+
+    function __dbgUpdate(){
+      $("dbgMembers").textContent = allMembers.length;
+      $("dbgKeys").textContent = Object.keys(latestMap).length;
+      $("dbgPresent").textContent = $("presentCount").textContent;
+      $("dbgRes").textContent = JSON.stringify(__dbgLastRes, null, 2);
+    }
+
+    // ------------------------------------------
+    // INITIALIZATION & BINDINGS
+    // ------------------------------------------
+    
+    // Define the boot function for the auth module to call
+    window.app = {
+        boot: function() {
+            $("serviceDate").value = ymdToday();
+            loadMembers().then(loadAttendance);
+        }
+    };
+
+    $("serviceDate").onchange = loadAttendance;
+    $("btnRefresh").onclick = loadAttendance;
+    $("btnDebug").onclick = () => $("dbgModal").classList.remove("hidden");
+    $("btnDbgClose").onclick = () => $("dbgModal").classList.add("hidden");
+    $("btnClearQueue").onclick = () => { queue = []; updateQueueUI(); };
+$("btnLogout").onclick = () => { 
+        if(confirm("Are you sure you want to log out?")) {
+            if(window.firebaseAuth) window.firebaseAuth.signOut(); 
+            localStorage.clear();
+            window.location.reload(); 
+        }
+    };
+
+  </script>
+</body>
+</html>

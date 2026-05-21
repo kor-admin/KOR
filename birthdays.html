@@ -1,0 +1,243 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+  <meta charset="UTF-8" /> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+  <title>KOR Members – Birthdays</title> 
+  <script src="https://cdn.tailwindcss.com"></script> 
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script> 
+ 
+  <style> 
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap'); 
+    body { font-family: 'Inter', sans-serif; height: 100vh; width: 100vw; overflow: hidden; margin: 0; padding: 0; } 
+ 
+    .animated-bg { 
+      background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%); 
+      background-size: 400% 400%; 
+      animation: gradientBG 15s ease infinite; 
+    } 
+    @keyframes gradientBG { 
+      0% { background-position: 0% 50%; } 
+      50% { background-position: 100% 50%; } 
+      100% { background-position: 0% 50%; } 
+    } 
+ 
+    @keyframes korPulse{ 
+      0%, 100% {transform:scale(1); box-shadow:0 0 0 rgba(0,0,0,0)} 
+      50%{transform:scale(1.05); box-shadow:0 0 20px rgba(168,85,247,0.3)} 
+    } 
+    .korLogo{ 
+      width: 10vh; height: 10vh; 
+      border-radius: 2vh; 
+      background: white; display:grid; place-items:center; 
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+      border:1px solid rgba(255,255,255,0.8); 
+      animation: korPulse 3s ease-in-out infinite; 
+    } 
+    .korLogo img { width: 6vh; height: 6vh; object-fit: cover; }
+ 
+    .glass-card { 
+      background: rgba(255, 255, 255, 0.7); 
+      backdrop-filter: blur(20px); 
+      border: 1px solid rgba(255, 255, 255, 0.6); 
+    } 
+ 
+    #balloon-container { position: fixed; inset: 0; pointer-events: none; z-index: 0; } 
+    .balloon { position: absolute; bottom: -100px; border-radius: 50%; animation: floatUp linear infinite; } 
+    @keyframes floatUp { 0% { transform: translateY(0); opacity: 0.8; } 100% { transform: translateY(-110vh); opacity: 0; } } 
+ 
+    .active-pulse {
+      animation: manualPulse 2.5s ease-in-out forwards !important;
+      z-index: 50; 
+      position: relative;
+    }
+    @keyframes manualPulse {
+      0% { transform: scale(1); border-color: transparent; }
+      50% { transform: scale(1.08); border-color: #ef4444; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4); }
+      100% { transform: scale(1); border-color: transparent; }
+    }
+ 
+    .birthday-card { 
+      border: 4px solid transparent; 
+      width: 40vw;
+      min-width: 40vw; 
+      transition: all 0.5s ease;
+    } 
+ 
+    .wave-char { display: inline-block; animation: waveText 1.5s infinite ease-in-out; } 
+    @keyframes waveText { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } } 
+
+    #carouselViewport { 
+      width: 100%; 
+      overflow: hidden; 
+      padding: 4vh 2vw; 
+    }
+    #birthdayList {
+      display: flex;
+      transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1); 
+      gap: 3vw; 
+      align-items: center; 
+    }
+  </style> 
+</head> 
+ 
+<body class="animated-bg flex items-center justify-center relative"> 
+ 
+  <div id="balloon-container"></div> 
+ 
+  <div class="glass-card w-[95vw] max-h-[95vh] p-[4vh] rounded-[3vh] shadow-2xl relative z-10 flex flex-col justify-between"> 
+     
+    <div class="flex flex-col lg:flex-row items-center justify-center gap-[3vh] mb-[3vh] border-b border-white/40 pb-[2vh] shrink-0">
+      <div class="flex flex-col items-center gap-[1vh] shrink-0">
+        <div class="korLogo"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="KOR" /></div> 
+      </div>
+      <div class="text-center w-auto">
+        <h1 id="animatedTitle" class="text-[4vh] md:text-[6vh] font-extrabold mb-[1vh] drop-shadow-sm leading-tight flex flex-col items-center gap-1"></h1> 
+        <p class="text-slate-700 text-[2.5vh] font-medium">Celebrating our brethrens born in <span id="currentMonth" class="font-bold">...</span></p> 
+      </div>
+    </div>
+ 
+    <div id="statusMessage" class="text-slate-600 text-[3vh] italic mb-6 text-center">Checking calendar...</div> 
+    
+    <div id="carouselViewport"><div id="birthdayList" class="hidden"></div></div>
+  </div> 
+ 
+<script> 
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyubBILwzSJcxbfuGcHCQFo-2PDMannzll8OgnDm5LkQsiYXYILqIFKvjiLPgAMjY0b/exec?key=KOR_ADMIN_2025'; 
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']; 
+  const MONTH_COLORS = ['text-blue-600','text-red-500','text-green-600','text-emerald-500','text-pink-500','text-yellow-600','text-sky-500','text-orange-500','text-amber-600','text-orange-600','text-slate-600','text-red-600']; 
+ 
+  const currentMonthIdx = new Date().getMonth(); 
+  document.getElementById('currentMonth').textContent = MONTHS[currentMonthIdx]; 
+  document.getElementById('currentMonth').classList.add(MONTH_COLORS[currentMonthIdx]); 
+ 
+  function animateHeading() {
+    const container = document.getElementById('animatedTitle');
+    const lines = [[{w:"₊⁺ℬ𝓁ℯ𝓈𝓈ℯ𝒹₊.",c:"#a855f7"}], [{w:"🎂𝐻𝒶𝓅𝓅𝓎",c:"#ef4444"},{w:"B𝒾𝓇𝓉𝒽𝒹𝒶𝓎!",c:"#ec4899"}]];
+    let charIdx = 0;
+    lines.forEach(lineWords => {
+      const lineDiv = document.createElement('div');
+      lineDiv.className = "flex flex-wrap justify-center gap-2";
+      lineWords.forEach((item, i) => {
+        [...item.w].forEach(char => {
+          const span = document.createElement('span'); span.textContent = char; span.className = 'wave-char'; span.style.color = item.c; span.style.animationDelay = `${charIdx++ * 0.05}s`;
+          lineDiv.appendChild(span);
+        });
+        if(i < lineWords.length-1) { const s = document.createElement('span'); s.innerHTML=' '; lineDiv.appendChild(s); }
+      });
+      container.appendChild(lineDiv);
+    });
+  }
+ 
+  function createBalloons() { 
+    const container = document.getElementById('balloon-container');
+    const colors = ['#f87171', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa']; 
+    for (let i = 0; i < 15; i++) { 
+      const b = document.createElement('div'); b.className = 'balloon';
+      const size = Math.random() * 20 + 20;
+      Object.assign(b.style, { width: `${size}px`, height: `${size*1.2}px`, left: `${Math.random()*100}%`, animationDuration: `${Math.random()*10+10}s`, backgroundColor: colors[Math.floor(Math.random()*colors.length)] });
+      container.appendChild(b);
+    } 
+  } 
+
+  function launchContinuousConfetti() { 
+    setInterval(() => { 
+      confetti({ particleCount: 30, origin: { x: Math.random()*0.2+0.1, y: Math.random()-0.2 } }); 
+      confetti({ particleCount: 30, origin: { x: Math.random()*0.2+0.7, y: Math.random()-0.2 } }); 
+    }, 2000);  
+  } 
+ 
+  async function fetchBirthdays() { 
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      renderBirthdays(data);
+    } catch(e) { document.getElementById('statusMessage').textContent = "Connection error."; }
+  } 
+ 
+  function renderBirthdays(data) { 
+    const list = document.getElementById('birthdayList'); 
+    const birthdays = data.filter(p => p.birthday && new Date(p.birthday).getMonth() === currentMonthIdx)
+                          .sort((a,b) => new Date(a.birthday).getDate() - new Date(b.birthday).getDate()); 
+ 
+    if (!birthdays.length) { document.getElementById('statusMessage').textContent = "No birthdays this month."; return; } 
+    document.getElementById('statusMessage').style.display = 'none'; 
+    list.classList.remove('hidden'); 
+ 
+    const createCard = (p) => {
+      const day = new Date(p.birthday).getDate(); 
+      const card = document.createElement('div'); 
+      card.className = 'birthday-card bg-white/60 p-[3vh] rounded-[2vh] shadow-lg flex items-center gap-[2vw]'; 
+      const nameParts = p.name.split(' ');
+      
+      card.innerHTML = `
+        <div class="bg-pink-100 w-[12vh] h-[12vh] rounded-full flex items-center justify-center text-[6vh] shrink-0">🥳</div> 
+        <div class="text-left w-full overflow-hidden">
+          <h3 class="text-[3.5vh] font-extrabold text-slate-800 leading-tight capitalize break-words">
+            <span class="text-red-600">${nameParts[0]}</span> ${nameParts.slice(1).join(' ')}
+          </h3> 
+          <p class="text-[2.5vh] ${MONTH_COLORS[currentMonthIdx]} font-bold mt-[1vh]">${MONTHS[currentMonthIdx]} ${day}</p>
+        </div>`; 
+      return card;
+    };
+
+    birthdays.forEach(p => list.appendChild(createCard(p)));
+
+    if (birthdays.length > 2) {
+      list.appendChild(createCard(birthdays[0])); 
+      list.appendChild(createCard(birthdays[1])); 
+    }
+
+    startCelebrationLoop(list, birthdays.length);
+  }
+
+  async function startCelebrationLoop(list, actualCount) {
+    let currentIndex = 0;
+    const PULSE_TIME = 2500; 
+    const SLIDE_TIME = 1500; 
+
+    while (true) {
+      const cards = list.children;
+      const leftCard = cards[currentIndex];
+      const rightCard = cards[currentIndex + 1];
+
+      if(leftCard) {
+        leftCard.classList.add('active-pulse');
+        await new Promise(r => setTimeout(r, PULSE_TIME + 200)); 
+        leftCard.classList.remove('active-pulse');
+      }
+
+      if(rightCard) {
+        rightCard.classList.add('active-pulse');
+        await new Promise(r => setTimeout(r, PULSE_TIME + 200)); 
+        rightCard.classList.remove('active-pulse');
+      }
+
+      if (actualCount > 2) {
+        currentIndex++;
+        const cardWidth = cards[0].offsetWidth + (window.innerWidth * 0.03); 
+
+        list.style.transition = `transform ${SLIDE_TIME}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        list.style.transform = `translateX(-${currentIndex * cardWidth}px)`;
+        
+        await new Promise(r => setTimeout(r, SLIDE_TIME));
+
+        if (currentIndex === actualCount) {
+           list.style.transition = "none"; 
+           currentIndex = 0; 
+           list.style.transform = `translateX(0px)`; 
+           await new Promise(r => setTimeout(r, 50)); 
+        }
+      } else {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+  }
+
+  animateHeading(); 
+  createBalloons(); 
+  launchContinuousConfetti(); 
+  fetchBirthdays();
+</script> 
+</body> 
+</html>

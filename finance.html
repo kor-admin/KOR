@@ -1,0 +1,1010 @@
+ <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>KOR Finance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    /* =========================================
+       SMART ZOOM SCALING (DESKTOP VS MOBILE)
+    ========================================= */
+    /* This rule applies ONLY to Desktop screens */
+    @media (min-width: 1024px) {
+        body {
+            zoom: 75%; 
+            width: 133.33vw !important;
+            min-height: 133.33vh !important; /* Allows scrolling if the list gets long! */
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    /* This rule applies ONLY to Mobile/Tablets */
+    @media (max-width: 1023px) {
+        body {
+            zoom: 100%; 
+            width: 100vw !important;
+            min-height: 100vh !important;
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    /* ============================
+       THEME ENGINE: PURPLE GLASS
+       ============================ */
+    :root {
+      /* DARK PURPLE MODE */
+      --bg-app: #0f0720;
+      --glass-card: rgba(30, 20, 50, 0.75);
+      --glass-border: rgba(147, 51, 234, 0.2);
+      --primary: #a855f7;
+      --text-main: #f3e8ff;
+      --text-muted: #c084fc;
+      
+      --input-bg: rgba(20, 10, 40, 0.5);
+      --input-border: rgba(147, 51, 234, 0.3);
+      --input-focus: rgba(168, 85, 247, 0.6);
+
+      /* Dashboard Specifics */
+      --goodBg: rgba(34,197,94,.15);
+      --goodBd: rgba(34,197,94,.4);
+      --warnBg: rgba(245,158,11,.15);
+      --warnBd: rgba(245,158,11,.4);
+      --badBg: rgba(239,68,68,.15);
+      --badBd: rgba(239,68,68,.4);
+      --infoBg: rgba(59,130,246,.15);
+      --infoBd: rgba(59,130,246,.4);
+      
+      --header-bg: rgba(15, 7, 32, 0.85);
+    }
+
+    /* LIGHT MODE */
+    [data-theme="light"] {
+      --bg-app: #f3e8ff;
+      --glass-card: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(216, 180, 254, 0.7);
+      --primary: #7e22ce;
+      --text-main: #3b0764;
+      --text-muted: #6b21a8;
+      
+      --input-bg: rgba(255, 255, 255, 0.5);
+      --input-border: rgba(216, 180, 254, 0.9);
+      --input-focus: rgba(126, 34, 206, 0.3);
+      
+      --goodBg: rgba(34,197,94,.1);
+      --goodBd: rgba(34,197,94,.3);
+      --warnBg: rgba(245,158,11,.1);
+      --warnBd: rgba(245,158,11,.3);
+      --badBg: rgba(239,68,68,.1);
+      --badBd: rgba(239,68,68,.3);
+      --infoBg: rgba(59,130,246,.1);
+      --infoBd: rgba(59,130,246,.3);
+      
+      --header-bg: rgba(243, 232, 255, 0.9);
+    }
+
+    body { 
+      margin: 0; 
+      font-family: 'Inter', sans-serif; 
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* --- Background Animation --- */
+    .flying-area { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: -1; pointer-events: none; }
+    .fly-item { position: absolute; bottom: -150px; opacity: 0.05; animation: flyUp 20s linear infinite; filter: grayscale(100%); }
+    [data-theme="light"] .fly-item { filter: none; opacity: 0.06; }
+    @keyframes flyUp { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; } }
+    .fly-item:nth-child(1) { left: 10%; width: 60px; animation-duration: 25s; }
+    .fly-item:nth-child(2) { left: 80%; width: 40px; animation-duration: 18s; animation-delay: 5s; }
+    .fly-item:nth-child(3) { left: 40%; width: 80px; animation-duration: 30s; animation-delay: 2s; }
+
+    /* --- Common UI --- */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0.6rem 1.2rem; border-radius: 12px;
+      font-weight: 600; font-size: 0.85rem; cursor: pointer;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      color: var(--text-main); transition: all 0.2s ease;
+    }
+    [data-theme="light"] .btn { background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(139, 92, 246, 0.3); color: var(--text-main); }
+    .btn:hover { transform: translateY(-1px); background: rgba(255, 255, 255, 0.2); }
+    .btn.primary { background: var(--primary); color: white; border: 1px solid rgba(255,255,255,0.2); }
+    .btn.danger { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); color: #fca5a5; }
+    [data-theme="light"] .btn.danger { color: #b91c1c; }
+    
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* --- INPUTS --- */
+    input, select, textarea {
+      width: 100%;
+      background: var(--input-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--input-border); 
+      color: var(--text-main);
+      border-radius: 8px;
+      padding: 0 10px !important; 
+      height: 36px !important;
+      min-height: 36px !important;
+      line-height: 36px !important;
+      font-size: 0.9rem; font-weight: 500;
+      outline: none; transition: all 0.2s; 
+      margin-bottom: 8px;
+    }
+    textarea { height: auto !important; padding: 10px !important; line-height: 1.4 !important; min-height: 60px !important; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25); background: rgba(255, 255, 255, 0.08); }
+    [data-theme="light"] input:focus { background: white; }
+    
+    /* Read Only Mode for Viewer */
+    .read-only-mode input, .read-only-mode select, .read-only-mode textarea {
+      pointer-events: none; opacity: 0.7; border-color: transparent; background: rgba(255,255,255,0.02);
+    }
+    .read-only-mode .btn-action { display: none !important; }
+
+    /* --- Layout Classes --- */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .card {
+      background: var(--glass-card); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); border-radius: 1.5rem;
+      padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2);
+    }
+    .card2 {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+      border-radius: 1rem; padding: 1.2rem; margin-bottom: 1rem;
+    }
+    h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
+    h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; opacity: 0.9; }
+    
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    
+    @media(max-width: 768px) { 
+      .grid2 { grid-template-columns: 1fr; } 
+      .row { flex-direction: column; align-items: stretch; gap: 8px; }
+      .row > input, .row > select, .row > button { width: 100% !important; flex: none !important; margin-right: 0 !important; margin-bottom: 8px !important; }
+      .card { padding: 1.2rem; }
+    }
+    
+    .hidden { display: none !important; }
+    
+    /* --- Login View --- */
+    .loginOverlay {
+      position: fixed; inset: 0; background: var(--bg-app); z-index: 9999;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .loginCard {
+      background: var(--glass-card); border: 1px solid var(--glass-border);
+      border-radius: 2rem; padding: 3rem; width: 100%; max-width: 420px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); text-align: center;
+    }
+    
+    /* --- Header --- */
+    .appbar {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--header-bg); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--glass-border); padding: 12px 20px;
+    }
+    .appbarInner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 40px; height: 40px; border-radius: 10px; background: white; padding: 2px; }
+    .brandTitle { font-weight: 800; font-size: 1.1rem; line-height: 1.1; }
+    .brandSub { font-size: 0.75rem; opacity: 0.7; }
+
+    /* --- Finance Specifics --- */
+    .summaryBar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
+    .sbox { border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
+    .sbox.good { background: var(--goodBg); border-color: var(--goodBd); }
+    .sbox.warn { background: var(--warnBg); border-color: var(--warnBd); }
+    .sbox.bad { background: var(--badBg); border-color: var(--badBd); }
+    .sbox.info { background: var(--infoBg); border-color: var(--infoBd); }
+    .sbox .label { font-size: 0.75rem; opacity: 0.8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .sbox .value { font-size: 1.2rem; font-weight: 800; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid var(--glass-border); text-align: left; }
+    th { opacity: 0.7; font-size: 0.8rem; text-transform: uppercase; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--glass-border); font-size: 0.75rem; font-weight: 700; background: rgba(255,255,255,0.05); }
+
+    /* Date Picker */
+    .dateWrap { position: relative; display: inline-flex; align-items: center; width: 100%; max-width: 250px; }
+    .dateWrap input { padding-left: 40px !important; }
+    .dateBadge { position: absolute; left: 8px; font-size: 1.2rem; pointer-events: none; opacity: 0.8; }
+  </style>
+</head>
+<body>
+
+  <div class="flying-area">
+    <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" />
+    <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" />
+    <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="fly-item" />
+  </div>
+
+  <div id="loginView" class="loginOverlay">
+    <div class="loginCard">
+      <div style="display:flex; justify-content:center; margin-bottom:20px;">
+        <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="w-16 h-16 rounded-xl bg-white p-1 shadow-lg animate-pulse" />
+      </div>
+      <h1 class="text-3xl font-extrabold mb-2" style="color:var(--text-main)">KOR Finance</h1>
+      <p class="text-sm uppercase tracking-widest text-slate-400 font-bold mb-8">Secure Access</p>
+      
+      <div class="text-left space-y-4">
+        <div>
+          <label class="text-xs font-bold text-slate-400 block mb-1">EMAIL</label>
+          <input id="loginEmail" type="email" placeholder="name@kor.com" />
+        </div>
+        <div>
+          <label class="text-xs font-bold text-slate-400 block mb-1">PASSWORD</label>
+          <input id="loginPass" type="password" placeholder="••••••••" />
+        </div>
+        
+        <button id="loginBtn" class="btn primary w-full py-3 mt-4">
+          <span id="loginBtnText">Sign In</span>
+        </button>
+        <div class="text-center mt-3">
+            <button onclick="window.resetUserPassword()" class="text-xs text-slate-400 hover:text-slate-200 underline bg-transparent border-none cursor-pointer">Forgot Password?</button>
+        </div>
+        <div id="loginMsg" class="text-center text-sm text-red-400 mt-2 min-h-[20px]"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboardView" class="hidden">
+    
+    <header class="appbar">
+      <div class="appbarInner">
+        <div class="brand">
+          <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="Logo">
+          <div>
+            <div class="brandTitle">KOR Finance</div>
+            <div class="brandSub" id="sessionSub">Welcome</div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <span id="roleBadge" class="pill" style="align-self:center; margin-right:10px;"></span>
+          <button class="btn" onclick="toggleTheme()">Theme</button>
+          <button class="btn danger" id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      
+      <div class="card" id="weeklyCard">
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+          <h3>Weekly Report</h3>
+          <div class="flex items-center gap-2">
+            <div class="dateWrap">
+              <span class="dateBadge">📅</span>
+              <input type="date" id="serviceDate">
+            </div>
+            <span id="dateStatus" class="pill hidden">Loaded ✅</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card2">
+            <h4>1) Tithes & Offering</h4>
+            <div id="donationRows"></div>
+            <div class="row mt-4 btn-action">
+              <button class="btn" onclick="addDonationRow()">+ Entry</button>
+              <button class="btn primary" id="btnSaveDon" onclick="saveDonations()">Save Donations</button>
+            </div>
+          </div>
+
+          <div class="card2">
+            <h4>2) Allocations / Expenses</h4>
+            <div id="allocRows"></div>
+            <div class="row mt-4 btn-action">
+              <button class="btn" onclick="addAllocRow()">+ Entry</button>
+              <button class="btn primary" id="btnSaveAll" onclick="saveAllocations()">Save Allocations</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card2 mt-4">
+          <h4>3) Weekly Summary</h4>
+          <div id="weeklySummary"></div>
+          <div class="grid2 mt-4">
+            <div>
+              <div class="opacity-70 text-xs uppercase font-bold mb-2">Donations Detail</div>
+              <div id="weeklyDonationsTable"></div>
+            </div>
+            <div>
+              <div class="opacity-70 text-xs uppercase font-bold mb-2">Allocations Detail</div>
+              <div id="weeklyAllocTable"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Reports & Export</h3>
+        <div class="grid2">
+          <div class="card2">
+            <h4>Monthly</h4>
+            <div class="row">
+              <input type="number" id="mYear" placeholder="Year" style="width:80px">
+              <input type="number" id="mMonth" placeholder="Month" style="width:60px">
+              <button class="btn primary" id="btnLoadMonth" onclick="loadMonthly()">Load</button>
+              <button class="btn" onclick="exportMonthlyPdf()">PDF Export</button>
+            </div>
+            <div id="monthlyOut"></div>
+          </div>
+          <div class="card2">
+             <h4>Yearly</h4>
+            <div class="row">
+              <input type="number" id="yYear" placeholder="Year" style="width:80px">
+              <button class="btn primary" id="btnLoadYear" onclick="loadYearly()">Load</button>
+              <button class="btn" onclick="exportYearlyPdf()">PDF Export</button>
+            </div>
+            <div id="yearlyOut"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card hidden" id="libraryCard">
+        <div class="flex justify-between items-center mb-4">
+          <h3>Finance Library</h3>
+          <div class="flex items-center gap-2 bg-white/5 p-1 rounded-lg">
+            <button class="btn text-lg py-1 px-3" onclick="navLibrary(-1)">←</button>
+            <span id="libDateDisplay" class="font-bold font-mono px-2">Loading...</span>
+            <button class="btn text-lg py-1 px-3" onclick="navLibrary(1)">→</button>
+          </div>
+        </div>
+        <div class="card2 overflow-x-auto">
+           <table class="w-full">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Type</th>
+                 <th>Detail / Name</th>
+                 <th>Amount</th>
+                 <th>Notes</th>
+               </tr>
+             </thead>
+             <tbody id="libBody">
+               <tr><td colspan="5" class="text-center opacity-50 py-4">Select a month to view entries</td></tr>
+             </tbody>
+           </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script type="module">
+  // FIX: Updated all imports to 10.7.1 to match other files (Tracker Fix)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA",
+    authDomain: "slidesync-37cd4.firebaseapp.com",
+    databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "slidesync-37cd4",
+    storageBucket: "slidesync-37cd4.firebasestorage.app",
+    messagingSenderId: "996754972458",
+    appId: "1:996754972458:web:7f8be6880c3463ac6a4853",
+    measurementId: "G-GCBS3X7STT"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
+
+  window.firebaseAuth = auth;
+  // Expose for legacy scripts
+  
+  // 1. LOGIN
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPass').value;
+    const msg = document.getElementById('loginMsg');
+    const btn = document.getElementById('loginBtn');
+    
+    if(!email || !pass) { msg.textContent = "Enter email & password"; return; }
+    
+    btn.disabled = true;
+    document.getElementById('loginBtnText').textContent = "Verifying...";
+    
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      // Success handled by onAuthStateChanged
+    } catch(e) {
+      msg.textContent = "Error: " + e.message;
+      btn.disabled = false;
+      document.getElementById('loginBtnText').textContent = "Sign In";
+    }
+  });
+
+  // 2. LOGOUT WITH CONFIRMATION & AUDIT LOGGING
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    // 1. Ask for confirmation before proceeding
+    if (!confirm("Are you sure you want to log out of the Finance System?")) {
+      return; // Exit if user cancels
+    }
+
+    const user = auth.currentUser;
+    const role = window.CURRENT_ROLE || 'unknown';
+
+    // Helper to perform the actual Firebase sign out
+    const performSignOut = () => {
+      signOut(auth).then(() => {
+        // Clear local role state on successful sign out
+        window.CURRENT_ROLE = null;
+      });
+    };
+
+    if (user && window.apiCall) {
+      // 2. Send Audit Log to backend
+      document.getElementById('logoutBtn').textContent = "Logging out...";
+      window.apiCall("audit_event", { 
+          event: "CLIENT_LOGOUT", 
+          meta: JSON.stringify({ 
+              actorEmail: user.email, 
+              role: role,
+              uid: user.uid 
+          }) 
+      }, () => {
+          // 3. Complete sign out after log is confirmed
+          performSignOut();
+      });
+
+      // Fallback: Force signout after 2 seconds if API connection hangs
+      setTimeout(performSignOut, 2000);
+    } else {
+      performSignOut();
+    }
+  });
+
+  // 3. AUTH STATE & ROLE CHECK
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try {
+        // Fetch Role
+        const userRef = doc(firestore, "users", user.uid);
+        const snap = await getDoc(userRef);
+        
+        if (!snap.exists()) throw new Error("No Profile Found");
+
+        const data = snap.data();
+        let roles = [];
+        if(data.role) roles.push(String(data.role).toLowerCase());
+        if(data.roles && Array.isArray(data.roles)) roles = [...roles, ...data.roles.map(r=>String(r).toLowerCase())];
+        
+        // --- STRICT ROLE MAPPING ---
+        let role = null;
+        const WRITE_ROLES = ['admin', 'finance1', 'finance2', 'finance3']; // ✅ Updated List
+        
+        if (roles.includes('admin')) {
+            role = 'admin';
+        } else if (roles.some(r => WRITE_ROLES.includes(r))) {
+            role = 'editor'; // Use 'editor' internally for Write Access
+        } else if (roles.includes('viewer')) {
+            role = 'viewer';
+        }
+
+        if (!role) throw new Error("Access Denied: You do not have a Finance role.");
+        window.CURRENT_ROLE = role;
+        
+        // ✅ NEW: LOG ACTOR EMAIL CLIENT-SIDE
+        if (window.apiCall) {
+            window.apiCall("audit_event", { 
+                event: "CLIENT_LOGIN", 
+                meta: JSON.stringify({ 
+                    actorEmail: user.email, 
+                    role: role,
+                    uid: user.uid 
+                }) 
+            }, () => {});
+        }
+
+        // UI Update
+        document.getElementById('loginView').classList.add('hidden');
+        document.getElementById('dashboardView').classList.remove('hidden');
+        document.getElementById('sessionSub').textContent = `Logged in as ${user.email}`;
+        document.getElementById('roleBadge').textContent = role.toUpperCase();
+        
+        // Apply Viewer Constraints
+        const wc = document.getElementById('weeklyCard');
+        if(role === 'viewer') {
+           wc.classList.add('read-only-mode');
+           // Disable inputs
+        } else {
+           wc.classList.remove('read-only-mode');
+        }
+
+        // ✅ SHOW LIBRARY FOR ADMIN/EDITOR ONLY
+        const libCard = document.getElementById('libraryCard');
+        if (role === 'admin' || role === 'editor') {
+          libCard.classList.remove('hidden');
+          if(window.initLibrary) window.initLibrary();
+        } else {
+          libCard.classList.add('hidden');
+        }
+        
+        // Init Data
+        if(window.initDashboard) window.initDashboard();
+
+      } catch(e) {
+        console.error(e);
+        document.getElementById('loginMsg').textContent = e.message;
+        // Show error on login screen
+        alert("Login Error: " + e.message);
+        signOut(auth);
+      }
+    } else {
+      document.getElementById('loginView').classList.remove('hidden');
+      document.getElementById('dashboardView').classList.add('hidden');
+      document.getElementById('loginBtn').disabled = false;
+      document.getElementById('loginBtnText').textContent = "Sign In";
+      document.getElementById('loginEmail').value = "";
+      document.getElementById('loginPass').value = "";
+    }
+  });
+
+// ==========================================
+  // 4. RESET PASSWORD LOGIC (Added Feature)
+  // ==========================================
+  window.resetUserPassword = async () => {
+        const email = prompt("Enter your email address to reset password:");
+        if (!email) return;
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            // Updated Alert: Now includes the spam folder notice
+            alert(`✅ Password reset email sent to: ${email}\n\n⚠️ IMPORTANT: Please check your SPAM/JUNK folder if you do not see it in your inbox.`);
+        } catch (error) {
+            alert("Error: " + error.message);
+        }
+    };
+
+  // ==========================================
+  // 5. LOGIN TRACKER (Auto-Update Last Seen)
+  // ==========================================
+  // --- TRACKER FIX APPLIED ---
+  onAuthStateChanged(auth, (user) => {
+      if (user) {
+          updateDoc(doc(firestore, "users", user.uid), {
+              lastLogin: serverTimestamp()
+          }).then(() => {
+              console.log("Login timestamp updated successfully.");
+          }).catch((error) => {
+              console.error("Failed to update timestamp:", error);
+          });
+      }
+  });
+
+</script>
+
+<script>
+  // === CORE APP LOGIC ===
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxcSdQ6CJ688LMjDyrqwbewgzSinO42RJs68VxU923xQ-PSEQG_NeOcf5NA9TSLjfXvEA/exec";
+  const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 Min Idle
+  let __idleTimer = null;
+  // Library State
+  let libYear = new Date().getFullYear();
+  let libMonth = new Date().getMonth() + 1;
+  // THEME
+  const THEME_KEY = "FIN_THEME";
+  function applyTheme(t) { document.documentElement.setAttribute("data-theme", t); localStorage.setItem(THEME_KEY, t); }
+  function toggleTheme() { applyTheme(localStorage.getItem(THEME_KEY)==='light'?'dark':'light'); }
+  applyTheme(localStorage.getItem(THEME_KEY)||'dark');
+
+  // API CALLER (SECURE TOKEN)
+  function apiCall(action, params, cb) {
+    if(!window.firebaseAuth?.currentUser) return;
+    // Get fresh token for every call
+    window.firebaseAuth.currentUser.getIdToken(true).then(token => {
+      const fn = "cb_" + Math.random().toString(36).slice(2);
+      const url = new URL(SCRIPT_URL);
+      url.searchParams.set("action", action);
+      url.searchParams.set("callback", fn);
+      url.searchParams.set("token", token); // Secure Firebase Token
+      
+      Object.keys(params||{}).forEach(k => url.searchParams.set(k, params[k]));
+  
+      const script = document.createElement("script");
+      window[fn] = (data) => { delete window[fn]; script.remove(); cb(data); };
+      script.onerror = () => { delete window[fn]; script.remove(); cb({ok:false, message:"Connection failed"}); };
+      script.src = url.toString();
+      document.body.appendChild(script);
+    }).catch(e => {
+      console.error("Token Error", e);
+      cb({ok:false, message:"Auth Error"});
+    });
+  }
+
+  // UTILS
+  function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({'&':'&','<':'<','>':'>','"':'"','\'':'\''}[m])); }
+  function money(n){ return Number(n||0).toFixed(2); }
+  function uuid4(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16)}); }
+  
+  function monthName(m){ 
+    const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const n = Number(m); return (n>0 && n<=12) ? names[n-1] : m;
+  }
+
+  function sumByMonth(rows, key){
+    const by = {};
+    (rows||[]).forEach(r=>{
+      const m = parseInt((r.serviceDate||"").split('-')[1]);
+      if(m) by[m] = (by[m]||0) + (Number(r[key])||0);
+    });
+    return by;
+  }
+
+  // IDLE TIMER LOGIC
+  function startIdle_(){
+    const reset = ()=>{ if(__idleTimer) clearTimeout(__idleTimer); __idleTimer = setTimeout(()=>{ if(window.firebaseAuth) window.firebaseAuth.signOut(); }, IDLE_TIMEOUT_MS); };
+    ["mousemove","mousedown","keydown","scroll","touchstart"].forEach(evt=>{ document.addEventListener(evt, reset, {passive:true}); });
+    reset();
+  }
+  
+  // INITIALIZATION (Called by Firebase Auth Observer)
+  window.initDashboard = function() {
+    startIdle_();
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("serviceDate").value = today;
+    document.getElementById("mYear").value = new Date().getFullYear();
+    document.getElementById("yYear").value = new Date().getFullYear();
+    document.getElementById("mMonth").value = new Date().getMonth() + 1;
+    
+    loadWeeklyByDate(today);
+  };
+  
+  // LIBRARY LOGIC (Exclusive Admin/Editor)
+  window.initLibrary = function() {
+    loadLibrary();
+  };
+
+  window.navLibrary = function(dir) {
+    let m = libMonth + dir;
+    let y = libYear;
+    if (m > 12) { m = 1; y++; }
+    if (m < 1) { m = 12; y--; }
+    libMonth = m; libYear = y;
+    loadLibrary();
+  }
+
+  function loadLibrary() {
+    document.getElementById('libDateDisplay').textContent = `${monthName(libMonth)} ${libYear}`;
+    document.getElementById('libBody').innerHTML = `<tr><td colspan="5" class="text-center py-4">Loading...</td></tr>`;
+    apiCall("monthly_details", {year: libYear, month: libMonth}, (res) => {
+       if (!res.ok) {
+         document.getElementById('libBody').innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-400">Error loading data</td></tr>`;
+         return;
+       }
+       
+       // Merge & Sort
+       const don = (res.donations || []).map(d => ({...d, isDonation:true}));
+       const all = (res.allocations || []).map(a => ({...a, isDonation:false}));
+       const merged = [...don, ...all].sort((a,b) => {
+          if (a.serviceDate !== b.serviceDate) return a.serviceDate.localeCompare(b.serviceDate);
+          return 0;
+       });
+
+       if (merged.length === 0) {
+         document.getElementById('libBody').innerHTML = `<tr><td colspan="5" class="text-center py-4 opacity-50">No entries for this month</td></tr>`;
+         return;
+       }
+
+       const html = merged.map(r => {
+          const typeBadge = r.isDonation 
+            ? `<span class="pill" style="background:var(--goodBg);color:var(--primary)">IN</span>` 
+            : `<span class="pill" style="background:var(--warnBg);color:orange">OUT</span>`;
+          const detail = r.isDonation ? r.name : r.category;
+          const sub = r.isDonation ? r.type : ""; // Tithes etc
+          
+          return `<tr class="border-white/5 hover:bg-white/5 transition">
+            <td class="font-mono text-xs">${r.serviceDate}</td>
+            <td>${typeBadge}</td>
+            <td>
+              <div class="font-bold">${esc(detail)}</div>
+              <div class="text-[10px] opacity-70 uppercase">${esc(sub)}</div>
+            </td>
+            <td class="font-bold font-mono">${money(r.amount)}</td>
+            <td class="text-xs opacity-70">${esc(r.notes)}</td>
+          </tr>`;
+       }).join('');
+       
+       document.getElementById('libBody').innerHTML = html;
+    });
+  }
+
+  // WEEKLY LOGIC
+  function loadWeeklyByDate(date){
+    const st = document.getElementById("dateStatus");
+    st.classList.remove("hidden"); st.textContent = "Loading...";
+    
+    apiCall("weekly_by_date", {serviceDate: date}, (res)=>{
+      if(!res.ok) return alert(res.message);
+      st.textContent = "Loaded ✅";
+      
+      renderWeeklySummary(res);
+      
+      const dWrap = document.getElementById("donationRows"); dWrap.innerHTML = "";
+      (res.donations||[]).forEach(x => addDonationRow(x.rowId, x.name, x.type, x.amount, x.notes));
+      if(!res.donations?.length && window.CURRENT_ROLE !== 'viewer') for(let i=0;i<3;i++) addDonationRow();
+      if(!res.donations?.length && window.CURRENT_ROLE === 'viewer') dWrap.innerHTML = "<div class='opacity-50 text-sm p-2'>No entries found</div>";
+      
+      const aWrap = document.getElementById("allocRows"); aWrap.innerHTML = "";
+      (res.allocations||[]).forEach(x => addAllocRow(x.rowId, x.category, x.amount, x.notes));
+      if(!res.allocations?.length && window.CURRENT_ROLE !== 'viewer') { addAllocRow("","Next Service Food"); addAllocRow("","Transpo"); addAllocRow("","Rent"); }
+      if(!res.allocations?.length && window.CURRENT_ROLE === 'viewer') aWrap.innerHTML = "<div class='opacity-50 text-sm p-2'>No entries found</div>";
+
+      document.getElementById("weeklyDonationsTable").innerHTML = renderTable(res.donations||[], ['name','type','amount'], ['Name','Type','Amt']);
+      document.getElementById("weeklyAllocTable").innerHTML = renderTable(res.allocations||[], ['category','amount'], ['Category','Amt']);
+    });
+  }
+
+  function renderWeeklySummary(res){
+    const net = Number(res.net||0);
+    const cls = net >= 0 ? "good" : "bad";
+    document.getElementById("weeklySummary").innerHTML = `
+      <div class="summaryBar">
+        <div class="sbox info"><div class="label">Date</div><div class="value">${esc(res.serviceDate)}</div></div>
+        <div class="sbox good"><div class="label">Donations</div><div class="value">${money(res.donationTotal)}</div></div>
+        <div class="sbox warn"><div class="label">Expenses</div><div class="value">${money(res.allocationTotal)}</div></div>
+        <div class="sbox ${cls}"><div class="label">Net Funds</div><div class="value">${money(res.net)}</div></div>
+      </div>`;
+  }
+
+  // ROW MANAGERS
+  function addDonationRow(id, name="", type="Tithes", amt="", note=""){
+    const div = document.createElement("div");
+    div.className = "row";
+    div.dataset.id = id || uuid4();
+    div.innerHTML = `
+      <input class="dName" placeholder="Name" value="${esc(name)}" style="flex:2">
+      <select class="dType" style="flex:1">
+        <option ${type==='Tithes'?'selected':''}>Tithes</option>
+        <option ${type==='Offering'?'selected':''}>Offering</option>
+        <option ${type==='Others'?'selected':''}>Others</option>
+      </select>
+      <input class="dAmt" type="number" placeholder="0.00" value="${esc(amt)}" style="flex:1">
+      <input class="dNote" placeholder="Note" value="${esc(note)}" style="flex:2">
+      <button class="btn danger btn-action" onclick="this.parentElement.remove()">✕</button>
+    `;
+    document.getElementById("donationRows").appendChild(div);
+  }
+
+  function addAllocRow(id, cat="", amt="", note=""){
+    const div = document.createElement("div"); div.className = "row";
+    div.dataset.id = id || uuid4();
+    div.innerHTML = `
+      <input class="aCat" placeholder="Category" value="${esc(cat)}" style="flex:2">
+      <input class="aAmt" type="number" placeholder="0.00" value="${esc(amt)}" style="flex:1">
+      <input class="aNote" placeholder="Note" value="${esc(note)}" style="flex:2">
+      <button class="btn danger btn-action" onclick="this.parentElement.remove()">✕</button>
+    `;
+    document.getElementById("allocRows").appendChild(div);
+  }
+
+  function saveDonations(){
+    const date = document.getElementById("serviceDate").value;
+    const items = Array.from(document.querySelectorAll("#donationRows .row")).map(r => ({
+      rowId: r.dataset.id,
+      name: r.querySelector(".dName").value,
+      type: r.querySelector(".dType").value,
+      amount: r.querySelector(".dAmt").value,
+      notes: r.querySelector(".dNote").value
+    }));
+    const btn = document.getElementById("btnSaveDon");
+    btn.textContent = "Saving...";
+    apiCall("save_donations", {payload: JSON.stringify({serviceDate:date, items})}, (res)=>{
+      btn.textContent = "Save Donations";
+      if(res.ok) loadWeeklyByDate(date);
+      else alert(res.message);
+    });
+  }
+
+  function saveAllocations(){
+    const date = document.getElementById("serviceDate").value;
+    const items = Array.from(document.querySelectorAll("#allocRows .row")).map(r => ({
+      rowId: r.dataset.id,
+      category: r.querySelector(".aCat").value,
+      amount: r.querySelector(".aAmt").value,
+      notes: r.querySelector(".aNote").value
+    }));
+    const btn = document.getElementById("btnSaveAll");
+    btn.textContent = "Saving...";
+    apiCall("save_allocations", {payload: JSON.stringify({serviceDate:date, items})}, (res)=>{
+      btn.textContent = "Save Allocations";
+      if(res.ok) loadWeeklyByDate(date);
+      else alert(res.message);
+    });
+  }
+
+  // MONTHLY/YEARLY
+  function loadMonthly(){
+    const btn = document.getElementById("btnLoadMonth"); btn.textContent = "...";
+    apiCall("monthly", {year: document.getElementById("mYear").value, month: document.getElementById("mMonth").value}, (res)=>{
+      btn.textContent = "Load";
+      if(res.ok) renderSummary("monthlyOut", res); else alert(res.message);
+    });
+  }
+  function loadYearly(){
+    const btn = document.getElementById("btnLoadYear"); btn.textContent = "...";
+    apiCall("yearly", {year: document.getElementById("yYear").value}, (res)=>{
+      btn.textContent = "Load";
+      if(res.ok) renderSummary("yearlyOut", res); else alert(res.message);
+    });
+  }
+
+  function renderSummary(id, res){
+    const net = Number(res.net||0);
+    document.getElementById(id).innerHTML = `
+      <div class="summaryBar">
+        <div class="sbox good"><div class="label">In</div><div class="value">${money(res.donationTotal)}</div></div>
+        <div class="sbox warn"><div class="label">Out</div><div class="value">${money(res.allocationTotal)}</div></div>
+        <div class="sbox ${net>=0?'good':'bad'}"><div class="label">Net</div><div class="value">${money(net)}</div></div>
+      </div>
+      ${res.monthly ? '<div style="margin-top:10px; opacity:0.8; font-size:0.8rem">Monthly Breakdown Available in PDF</div>' : ''}
+    `;
+  }
+
+  // === PDF GENERATOR ===
+  function exportMonthlyPdf(){
+    const y = document.getElementById("mYear").value;
+    const m = document.getElementById("mMonth").value;
+    const btn = document.querySelector("button[onclick='exportMonthlyPdf()']");
+    btn.textContent = "Generating...";
+    apiCall("monthly_details", {year: y, month: m}, (res)=>{
+      btn.textContent = "PDF Export";
+      if(!res.ok) return alert("Export failed");
+      
+      const title = `Monthly Report: ${res.year}-${String(res.month).padStart(2,'0')}`;
+      const sub = `Period: ${res.rangeStart} to ${res.rangeEnd}`;
+      const html = buildPdfHtml(title, sub, res.donations, res.allocations, res);
+      openPrintWindow(html);
+    });
+  }
+
+  function exportYearlyPdf(){
+    const y = document.getElementById("yYear").value;
+    const btn = document.querySelector("button[onclick='exportYearlyPdf()']");
+    btn.textContent = "Generating...";
+    apiCall("yearly_details", {year: y}, (res)=>{
+      btn.textContent = "PDF Export";
+      if(!res.ok) return alert("Export failed");
+      
+      const donByMonth = sumByMonth(res.donations, 'amount');
+      const allByMonth = sumByMonth(res.allocations, 'amount');
+      const monthlyRows = [];
+      let totalD = 0, totalA = 0;
+      
+      for(let i=1; i<=12; i++){
+        const d = donByMonth[i]||0; const a = allByMonth[i]||0;
+        totalD += d; totalA += a;
+        monthlyRows.push({ date: monthName(i), name: "Month Summary", type: "-", amount: d, notes: `Net: ${money(d-a)}` });
+      }
+      
+      const title = `Yearly Finance Report: ${res.year}`;
+      const html = buildYearlyPdfHtml(title, monthlyRows, totalD, totalA);
+      openPrintWindow(html);
+    });
+  }
+
+  function buildPdfHtml(title, sub, dons, allocs, totals){
+    const date = new Date().toLocaleString();
+    const netClass = totals.net >= 0 ? "color:green" : "color:red";
+    return `
+      <html>
+      <head><title>${title}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; padding: 20px; }
+        h1 { margin-bottom: 5px; } .sub { color: #666; margin-bottom: 20px; }
+        .summary { display: flex; gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border: 1px solid #ddd; border-radius: 8px; }
+        .box { flex: 1; } .label { font-size: 10px; color: #666; text-transform: uppercase; } .val { font-size: 16px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { text-align: left; background: #f3f4f6; padding: 8px; border-bottom: 2px solid #ddd; font-size: 11px; }
+        td { padding: 8px; border-bottom: 1px solid #eee; }
+        .footer { margin-top: 30px; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+        @media print { .no-print { display: none; } }
+      </style>
+      </head>
+      <body>
+        <button class="no-print" onclick="window.print()" style="padding:10px; margin-bottom:20px; cursor:pointer;">Print / Save as PDF</button>
+        <h1>${title}</h1>
+        <div class="sub">${sub}</div>
+        
+        <div class="summary">
+          <div class="box"><div class="label">Donations</div><div class="val">${money(totals.donationTotal)}</div></div>
+          <div class="box"><div class="label">Allocations</div><div class="val">${money(totals.allocationTotal)}</div></div>
+          <div class="box"><div class="label">Net Total</div><div class="val" style="${netClass}">${money(totals.net)}</div></div>
+        </div>
+
+        <h3>Donations Detail</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Name</th><th>Type</th><th>Amount</th><th>Notes</th></tr></thead>
+          <tbody>${(dons||[]).map(d => `<tr><td>${d.serviceDate}</td><td>${d.name}</td><td>${d.type}</td><td>${money(d.amount)}</td><td>${d.notes}</td></tr>`).join('') || '<tr><td colspan="5">No records</td></tr>'}</tbody>
+        </table>
+
+        <h3>Allocations Detail</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Notes</th></tr></thead>
+          <tbody>${(allocs||[]).map(a => `<tr><td>${a.serviceDate}</td><td>${a.category}</td><td>${money(a.amount)}</td><td>${a.notes}</td></tr>`).join('') || '<tr><td colspan="4">No records</td></tr>'}</tbody>
+        </table>
+
+        <div class="footer">Generated on ${date} • KOR Finance System</div>
+        <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 500); }<\/script>
+      </body>
+      </html>
+    `;
+  }
+
+  function buildYearlyPdfHtml(title, rows, dTotal, aTotal){
+    const date = new Date().toLocaleString();
+    const net = dTotal - aTotal;
+    
+    return `
+      <html>
+      <head><title>${title}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; padding: 20px; }
+        h1 { margin-bottom: 5px; } .summary { display: flex; gap: 15px; margin: 20px 0; padding: 15px; background: #f9fafb; border: 1px solid #ddd; }
+        .box { flex: 1; } .label { font-size: 10px; color: #666; uppercase; } .val { font-size: 16px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; background: #f3f4f6; padding: 8px; border-bottom: 2px solid #ddd; }
+        td { padding: 8px; border-bottom: 1px solid #eee; }
+      </style>
+      </head>
+      <body>
+        <button onclick="window.print()" style="margin-bottom:20px;">Print PDF</button>
+        <h1>${title}</h1>
+        <div class="summary">
+          <div class="box"><div class="label">Total In</div><div class="val">${money(dTotal)}</div></div>
+          <div class="box"><div class="label">Total Out</div><div class="val">${money(aTotal)}</div></div>
+          <div class="box"><div class="label">Net</div><div class="val">${money(net)}</div></div>
+        </div>
+        <table>
+          <thead><tr><th>Month</th><th>Donations</th><th>Allocations</th><th>Net Summary</th></tr></thead>
+          <tbody>
+            ${rows.map(r => {
+               return `<tr>
+                 <td><b>${r.date}</b></td>
+                 <td>${money(r.amount)}</td>
+                 <td>${money(Number(r.amount) - (Number(r.notes.replace(/[^0-9.-]+/g,"")) || 0))}</td>
+                 <td>${r.notes}</td>
+               </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:30px; font-size:10px; color:#999;">Generated on ${date}</div>
+        <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 500); }<\/script>
+      </body>
+      </html>
+    `;
+  }
+
+  function openPrintWindow(html){
+    const w = window.open("", "_blank");
+    if(!w) return alert("Pop-up blocked. Please allow pop-ups.");
+    w.document.write(html);
+    w.document.close();
+  }
+
+  function renderTable(rows, keys, heads){
+    if(!rows.length) return '<div class="opacity-50 text-sm">No data</div>';
+    let h = heads.map(x=>`<th>${x}</th>`).join('');
+    let b = rows.map(r=> `<tr>${keys.map(k=>`<td>${esc(r[k])}</td>`).join('')}</tr>`).join('');
+    
+    return `<table><thead><tr>${h}</tr></thead><tbody>${b}</tbody></table>`;
+  }
+
+  document.getElementById("serviceDate").addEventListener("change", (e)=>loadWeeklyByDate(e.target.value));
+</script>
+</body>
+</html>
