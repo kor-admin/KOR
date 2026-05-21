@@ -1,0 +1,838 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <title>KOR User Manager Pro</title> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <script src="https://cdn.tailwindcss.com"></script> 
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"> 
+    <style> 
+        /* ============================ 
+           THEME: Dark Glass (KOR Unified) 
+           ============================ */ 
+        :root { 
+            --bg-app: #0f172a; 
+            --glass-card: rgba(30, 41, 59, 0.7); 
+            --glass-border: rgba(255, 255, 255, 0.08); 
+            --primary: #22c55e;
+            --text-main: #f1f5f9; 
+            --text-muted: #94a3b8; 
+        } 
+ 
+        body {  
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-app);  
+            color: var(--text-main); 
+            overflow-x: hidden; 
+        } 
+ 
+        /* --- Glass Components --- */ 
+        .glass-panel { 
+            background: var(--glass-card);
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 0.375rem; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        } 
+ 
+        /* --- COMPACT INPUTS (High Density) --- */ 
+        input, select, textarea { 
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            color: white; 
+            padding: 6px 10px;
+            font-size: 13px;
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.2s; 
+            font-weight: 400; 
+        } 
+ 
+        input:focus, select:focus { 
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.8); 
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+        } 
+ 
+        label { 
+            display: block;
+            font-size: 11px; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em; 
+            color: var(--text-muted); 
+            margin-bottom: 4px; 
+            margin-left: 1px;
+        } 
+ 
+        /* --- BUTTONS --- */ 
+        .btn {  
+            padding: 6px 12px;
+            border-radius: 4px;  
+            font-size: 13px;  
+            font-weight: 500;  
+            transition: all 0.2s;  
+            cursor: pointer;  
+            border: none;  
+            display: inline-flex;  
+            align-items: center;  
+            justify-content: center;
+            gap: 0.5rem;  
+        } 
+        .btn:active { transform: scale(0.96);
+        } 
+         
+        .btn-primary { background: var(--primary);
+            color: #022c22; } 
+        .btn-primary:hover { background: #4ade80;
+        } 
+         
+        .btn-secondary { background: rgba(255,255,255,0.05);
+            color: white; border: 1px solid rgba(255,255,255,0.1); } 
+        .btn-secondary:hover { background: rgba(255,255,255,0.1);
+        } 
+ 
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3); } 
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.25);
+            color: white; } 
+ 
+        .btn-warning { background: rgba(234, 179, 8, 0.15);
+            color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); } 
+        .btn-warning:hover { background: rgba(234, 179, 8, 0.25);
+            color: white; } 
+ 
+        /* --- Stats Cards --- */ 
+        .stat-card { 
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--glass-border); 
+            border-radius: 0.375rem; 
+            padding: 1rem; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        } 
+ 
+        /* --- Responsive List Table --- */ 
+        .list-header { 
+            display: none;
+            grid-template-columns: 2fr 2fr 1fr 100px;  
+            gap: 0.5rem; 
+            padding: 0.5rem 0.75rem; 
+            border-bottom: 1px solid var(--glass-border); 
+            color: var(--text-muted); 
+            font-size: 10px; text-transform: uppercase;
+            font-weight: 700; letter-spacing: 0.05em; 
+        } 
+         
+        .list-row { 
+            display: flex;
+            flex-direction: column; gap: 0.25rem; 
+            padding: 0.5rem 0.75rem; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            transition: background 0.2s;
+        } 
+        .list-row:hover { background: rgba(255,255,255,0.02);
+        } 
+         
+        .list-meta { display: flex;
+            flex-wrap: wrap; gap: 0.25rem; align-items: center; margin-top: 0.15rem; } 
+ 
+        @media (min-width: 768px) { 
+            .list-header { display: grid;
+            } 
+            .list-row { 
+                display: grid;
+                grid-template-columns: 2fr 2fr 1fr 100px; 
+                align-items: center; 
+                gap: 0.5rem; 
+                padding: 0.5rem 0.75rem;
+            } 
+            .list-meta { margin-top: 0;
+            } 
+        } 
+ 
+        /* --- Badges --- */ 
+        .badge { padding: 2px 6px;
+            border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; display: inline-block; margin-right: 4px; margin-bottom: 2px; letter-spacing: 0.025em;
+        } 
+        .badge-admin { background: rgba(239, 68, 68, 0.2); color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3); } 
+        .badge-viewer { background: rgba(148, 163, 184, 0.2);
+            color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); } 
+        .badge-finance { background: rgba(16, 185, 129, 0.2);
+            color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); } 
+        .badge-worship { background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); } 
+        .badge-attendant { background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); } 
+        .badge-scheduler { background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); } 
+        .badge-presenter { background: rgba(236, 72, 153, 0.2);
+            color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.3); } 
+        .badge-prayer { background: rgba(234, 179, 8, 0.2);
+            color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); } 
+        .badge-user { background: rgba(71, 85, 105, 0.3);
+            color: #cbd5e1; } 
+ 
+        /* --- Checkbox Grid --- */ 
+        .role-box { 
+            max-height: 200px;
+            overflow-y: auto; 
+            background: rgba(15, 23, 42, 0.4); 
+            padding: 0.5rem; 
+            border: 1px solid var(--glass-border); 
+            border-radius: 4px;
+        } 
+        .role-box::-webkit-scrollbar { width: 6px;
+        } 
+        .role-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px;
+        } 
+         
+        .role-option { display: flex;
+            align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; font-size: 12px; color: #cbd5e1; transition: color 0.2s;
+        } 
+        .role-option:hover { color: white;
+        } 
+        .role-option input[type="checkbox"] { width: 13px; height: 13px; margin: 0; accent-color: var(--primary);
+            cursor: pointer; } 
+ 
+        /* --- Login Animation --- */ 
+        @keyframes korPulse{ 
+            0%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)} 
+            50%{transform:scale(1.05);box-shadow:0 0 20px rgba(201,193,182,.55)} 
+            100%{transform:scale(1);box-shadow:0 0 0 rgba(201,193,182,0)} 
+        } 
+        .korLogo { 
+            width:60px; height:60px; border-radius:16px; 
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1); 
+            display:grid; place-items:center;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+            border:1px solid rgba(255,255,255,0.8); 
+            animation: korPulse 3s ease-in-out infinite; 
+            margin: 0 auto 1.5rem auto;
+        } 
+        .korLogo img { width: 35px; height: 35px; border-radius: 8px;
+        } 
+ 
+        /* --- Utilities --- */ 
+        .hidden { display: none !important;
+        } 
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px;
+        } 
+        .text-xxs { font-size: 11px;
+        } 
+         
+        .filter-btn {  
+            background: transparent;
+            color: var(--text-muted);  
+            padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+        } 
+        .filter-btn.active { background: #334155; color: white;
+        } 
+    </style> 
+</head> 
+<body class="antialiased min-h-screen"> 
+ 
+<div id="loginOverlay" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#020617] bg-opacity-95 backdrop-blur-sm"> 
+    <div class="w-full max-w-lg glass-panel p-6 md:p-8 border-t border-white/10"> 
+        <div class="text-center mb-6"> 
+            <div class="korLogo"> 
+                <img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="Logo" /> 
+            </div> 
+            <h1 class="text-2xl font-extrabold tracking-tight text-white">User Manager Pro</h1> 
+            <p class="text-xs uppercase tracking-widest text-slate-400 font-bold mt-1">Admin Access Required</p> 
+        </div> 
+ 
+        <div class="space-y-4"> 
+            <div> 
+                <label class="!mt-0">Email Address</label> 
+                <input id="lgEmail" type="email" placeholder="admin@company.com" autocomplete="username" /> 
+            </div> 
+             
+            <div> 
+                <label class="!mt-0">Password</label> 
+                <div class="relative"> 
+                    <input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password" class="pr-14" /> 
+                    <button type="button" onclick="const p=document.getElementById('lgPass');
+                    p.type = (p.type==='password') ? 'text' : 'password';" class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-white focus:outline-none"> 
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /> 
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /> 
+                        </svg> 
+                    </button> 
+                </div> 
+            </div> 
+ 
+            <div id="lgStatus" class="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-medium text-slate-300"> 
+                <span id="lgStatusTxt">Ready to connect</span> 
+                <span class="w-2 h-2 rounded-full bg-slate-500" id="lgDot"></span> 
+            </div> 
+ 
+            <button id="lgBtn" type="button" class="w-full btn btn-primary py-2.5 shadow-lg shadow-green-500/10 text-xs font-bold uppercase tracking-wide"> 
+                Secure Login 
+            </button> 
+        </div> 
+ 
+        <p class="text-center text-[10px] text-slate-500 mt-6 uppercase tracking-widest font-medium"> 
+            © KOR Management System 
+        </p> 
+    </div> 
+</div> 
+ 
+<div id="app" class="hidden pb-12"> 
+    <nav class="sticky top-0 z-30 bg-[#0f172a]/90 backdrop-blur-md border-b border-white/5 px-4 py-3 flex items-center justify-between"> 
+        <div class="flex items-center gap-2"> 
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-200 to-slate-400 flex items-center justify-center shadow-inner"> 
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /> 
+                </svg> 
+            </div> 
+            <span class="font-bold text-lg tracking-tight text-white">User Manager</span> 
+        </div> 
+        
+        <div class="flex items-center gap-4">
+            <div id="adminPasscodeDisplay" class="hidden md:block px-3 py-1 bg-green-500/10 border border-green-500/20 rounded text-green-400 font-mono text-xs tracking-widest font-bold">
+                LOADING CODE...
+            </div>
+            
+            <button onclick="app.logout()" class="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase tracking-wider border border-red-500/20 px-3 py-1.5 rounded hover:bg-red-500/10 transition-colors"> 
+                Logout 
+            </button> 
+        </div>
+    </nav> 
+ 
+    <div class="max-w-5xl mx-auto px-4 mt-6"> 
+         
+        <div class="grid grid-cols-3 gap-3 md:gap-4 mb-6"> 
+            <div class="stat-card"> 
+                <div class="text-2xl md:text-3xl font-bold text-white" id="statTotal">0</div> 
+                <div class="text-[10px] md:text-xs text-slate-400 uppercase tracking-wider font-bold mt-1">Total Users</div> 
+            </div> 
+            <div class="stat-card bg-green-900/10 border-green-500/20"> 
+                <div class="text-2xl md:text-3xl font-bold text-green-400" id="statActive">0</div> 
+                <div class="text-[10px] md:text-xs text-green-400/70 uppercase tracking-wider font-bold mt-1">Active</div> 
+            </div> 
+            <div class="stat-card bg-red-900/10 border-red-500/20"> 
+                <div class="text-2xl md:text-3xl font-bold text-red-400" id="statDisabled">0</div> 
+                <div class="text-[10px] md:text-xs text-red-400/70 uppercase tracking-wider font-bold mt-1">Disabled</div> 
+            </div> 
+        </div> 
+ 
+        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"> 
+            <div class="flex bg-slate-800/80 rounded-xl p-1.5 border border-slate-700"> 
+                <button class="filter-btn active" onclick="app.filterBy('all', this)">All</button> 
+                <button class="filter-btn" onclick="app.filterBy('active', this)">Active</button> 
+                <button class="filter-btn" onclick="app.filterBy('disabled', this)">Disabled</button> 
+            </div> 
+             
+            <div class="flex gap-4 w-full md:w-auto"> 
+                <button class="btn btn-secondary flex-1 md:flex-none" onclick="app.loadAllUsers()"> 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> 
+                    Refresh 
+                </button> 
+                <button class="btn btn-primary flex-1 md:flex-none shadow-lg shadow-green-500/20" onclick="app.openCreateModal()"> 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg> 
+                    New User 
+                </button> 
+            </div> 
+        </div> 
+ 
+        <div class="glass-panel overflow-hidden"> 
+            <div class="list-header"> 
+                <div>User / UID</div> 
+                <div>Assigned Roles</div> 
+                <div>Status</div> 
+                <div class="text-right">Actions</div> 
+            </div> 
+            <div id="userListBody"></div> 
+        </div> 
+    </div> 
+</div> 
+ 
+<div id="createModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden"> 
+    <div class="glass-panel w-full max-w-lg shadow-2xl border-t-2 border-t-green-500 p-6 relative"> 
+        <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-3"> 
+            <span class="w-1.5 h-6 bg-green-500 rounded-full"></span> 
+            Create New Account 
+        </h2> 
+         
+        <div class="space-y-4"> 
+            <div class="grid grid-cols-1 gap-4">  
+                <div> 
+                    <label>Email Address</label> 
+                    <input type="email" id="newEmail" placeholder="user@example.com"> 
+                </div> 
+                <div> 
+                    <label>Password (Min 6)</label> 
+                    <input type="password" id="newPass" placeholder="******"> 
+                </div> 
+            </div> 
+            <div> 
+                <label>Assign Roles</label> 
+                <div id="createRolesContainer" class="role-box grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2"></div> 
+            </div> 
+        </div> 
+ 
+        <div class="flex gap-3 mt-6 pt-4 border-t border-white/5"> 
+            <button class="btn btn-secondary flex-1" onclick="document.getElementById('createModal').classList.add('hidden')">Cancel</button> 
+            <button class="btn btn-primary flex-1" onclick="app.createUser()">Create User</button> 
+        </div> 
+    </div> 
+</div> 
+ 
+<div id="editModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden"> 
+    <div class="glass-panel w-full max-w-lg shadow-2xl border-t-2 border-t-blue-500 p-6"> 
+        <div class="flex justify-between items-start mb-6"> 
+            <div> 
+                <h2 class="text-xl font-bold text-white">Edit Profile</h2> 
+                <div id="targetUid" class="font-mono text-[10px] text-slate-500 select-all mt-1"></div> 
+            </div> 
+            <div id="editStatusBadge"></div> 
+        </div> 
+ 
+        <div class="space-y-4"> 
+            <div> 
+                <label>Linked Email</label> 
+                <input type="email" id="editEmail" placeholder="user@example.com"> 
+            </div> 
+            <div> 
+                <label>Manage Roles</label> 
+                <div id="editRolesContainer" class="role-box grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2"></div> 
+            </div> 
+            <div> 
+                <label>Account Actions</label> 
+                <button class="btn btn-warning w-full mb-3 shadow-lg shadow-yellow-500/10" onclick="app.sendResetPassword()"> 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /> 
+                    </svg> 
+                    Send Password Reset Email 
+                </button> 
+                 
+                <div id="statusActionArea"></div> 
+            </div> 
+        </div> 
+ 
+        <div class="mt-6 pt-4 border-t border-white/5 space-y-3"> 
+            <button class="btn btn-danger w-full justify-start px-4" onclick="app.deleteUser()"> 
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg> 
+                Delete User Data Permanently 
+            </button> 
+            <div class="flex gap-4"> 
+                <button class="btn btn-secondary flex-1" onclick="document.getElementById('editModal').classList.add('hidden')">Cancel</button> 
+                <button class="btn btn-primary flex-1 bg-blue-600 hover:bg-blue-500 text-white" onclick="app.saveUserChanges()">Save Changes</button> 
+            </div> 
+        </div> 
+    </div> 
+</div> 
+ 
+<script type="module"> 
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    // ADDED: Import Realtime Database functions
+    // Added 'onValue' to the list
+    import { getDatabase, ref as rtdbRef, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    
+    // --- CONFIGURATION --- 
+    const firebaseConfig = { 
+      apiKey: "AIzaSyCWAxUm_Z_i-EP_xqayhQrwsL4Qkmh5fMA", 
+      authDomain: "slidesync-37cd4.firebaseapp.com", 
+      // ADDED: Database URL for Passcode Sync
+      databaseURL: "https://slidesync-37cd4-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "slidesync-37cd4", 
+      storageBucket: "slidesync-37cd4.firebasestorage.app", 
+      messagingSenderId: "996754972458", 
+      appId: "1:996754972458:web:7f8be6880c3463ac6a4853" 
+    };
+    
+    const primaryApp = initializeApp(firebaseConfig, "primary"); 
+    const auth = getAuth(primaryApp); 
+    const db = getFirestore(primaryApp);
+    const rtdb = getDatabase(primaryApp);
+    
+    // Initialize Realtime DB
+
+    // DATA 
+    let allUsers = [];
+    let currentFilter = 'all'; 
+    let editTargetId = null;
+
+    // DEFINED ROLES LIST 
+    const AVAILABLE_ROLES = [ 
+        "admin", "viewer", 
+        "Finance1", "Finance2", "Finance3", 
+        "Attendant1", "Attendant2", "Attendant3", 
+        "Scheduler1", "Scheduler2", "Scheduler3", 
+        "Worship1", "Worship2", "Worship3", 
+        "Presenter1", "Presenter2", "Presenter3", 
+        "Prayer1", "Prayer2", "Prayer3" 
+    ];
+
+// --- UPDATED: PASSCODE LISTENER (Read-Only) ---
+function manageDailyPasscode() {
+    console.log("Passcode listener started...");
+    // Debug: check if this runs
+    const displayElement = document.getElementById('adminPasscodeDisplay');
+    // Explicitly reference the RTDB instance and path
+    const passRef = rtdbRef(rtdb, 'presentation/access/passcode');
+    onValue(passRef, (snapshot) => {
+        const data = snapshot.val();
+        console.log("RTDB Data Received:", data); // Debug: see what comes back
+
+        if (data && data.code) {
+            if(displayElement) {
+                displayElement.style.color = "#4ade80"; 
+                displayElement.style.borderColor = "rgba(74, 222, 128, 0.2)"; 
+                displayElement.innerText = `TODAY'S CODE: ${data.code}`; 
+                displayElement.classList.remove('hidden'); // Ensure it's not hidden by CSS
+            }
+        } else {
+            console.warn("No data found at presentation/access/passcode");
+            if(displayElement) displayElement.innerText = "WAITING FOR GENERATOR...";
+        }
+    }, (error) => {
+        console.error("Firebase Read Error:", error.message); 
+        if(displayElement) {
+            displayElement.style.color = "#f87171"; 
+            displayElement.innerText = "OFFLINE (Check Permissions)"; 
+        }
+    });
+}
+
+    // --- LOGIN HANDLER (INITIAL CLICK) --- 
+    document.getElementById('lgBtn').addEventListener('click', () => { 
+        const email = document.getElementById('lgEmail').value; 
+        const pass = document.getElementById('lgPass').value; 
+        const stat = document.getElementById('lgStatusTxt'); 
+         
+        if(!email || !pass) { stat.textContent = "Enter email & password"; return; } 
+         
+        stat.textContent = "Verifying Credentials..."; 
+        document.getElementById('lgDot').className = "w-3 h-3 rounded-full bg-yellow-500 animate-pulse"; 
+         
+        signInWithEmailAndPassword(auth, email, pass).catch(e => { 
+            stat.textContent = "Error: " + e.message; 
+            document.getElementById('lgDot').className = "w-3 h-3 rounded-full bg-red-500"; 
+        }); 
+    });
+    
+    // --- AUTH STATE & ADMIN CHECK (THE GATEKEEPER) --- 
+    onAuthStateChanged(auth, async (user) => { 
+        const overlay = document.getElementById('loginOverlay'); 
+        const mainApp = document.getElementById('app'); 
+        const stat = document.getElementById('lgStatusTxt'); 
+         
+        if(user) { 
+            stat.textContent = "Checking Admin Permissions..."; 
+         
+            try { 
+                // 1. FETCH USER DATA TO CHECK ROLE 
+                const userSnap = await getDoc(doc(db, "users", user.uid)); 
+                 
+                if (!userSnap.exists()) { 
+                    throw new Error("User record not found."); 
+                } 
+ 
+                const userData = userSnap.data(); 
+                 
+                // 2. CHECK IF ADMIN 
+                // Handles both array 'roles' and string 'role' formats 
+                const isAdmin = (userData.roles && userData.roles.includes('admin')) || (userData.role === 'admin');
+                if (!isAdmin) { 
+                    throw new Error("ACCESS DENIED: You do not have 'admin' privileges.");
+                } 
+ 
+                // 3. UPDATE LAST LOGIN TIMESTAMP & PORTAL (UPDATED HERE)
+                await updateDoc(doc(db, "users", user.uid), { 
+                    lastLogin: serverTimestamp(),
+                    lastPortal: "User Manager (Admin)" 
+                });
+                
+                // 4. ALLOW ACCESS 
+                overlay.style.display = 'none';
+                mainApp.classList.remove('hidden'); 
+                app.loadAllUsers(); 
+                app.renderCheckboxes('createRolesContainer'); 
+                app.renderCheckboxes('editRolesContainer'); 
+                
+                // 5. TRIGGER PASSCODE CHECK
+                manageDailyPasscode();
+            } catch (error) { 
+                // KICK OUT UNAUTHORIZED USER 
+                console.error("Auth Error:", error);
+                await signOut(auth); 
+                alert(error.message); 
+                stat.textContent = "Access Denied"; 
+                document.getElementById('lgDot').className = "w-3 h-3 rounded-full bg-red-500";
+                // Reset UI if needed 
+                overlay.style.display = 'flex';
+                mainApp.classList.add('hidden'); 
+            } 
+ 
+        } else { 
+            // User is signed out 
+            overlay.style.display = 'flex';
+            mainApp.classList.add('hidden'); 
+            document.getElementById('lgEmail').value = ""; 
+            document.getElementById('lgPass').value = ""; 
+            document.getElementById('lgStatusTxt').textContent = "Ready to connect"; 
+            document.getElementById('lgDot').className = "w-3 h-3 rounded-full bg-slate-500";
+        } 
+    }); 
+ 
+    window.app = { 
+        logout: () => { 
+            if(confirm("Are you sure you want to log out?")) { 
+                signOut(auth);
+            } 
+        }, 
+ 
+        // --- PASSWORD RESET FEATURE --- 
+        sendResetPassword: async () => { 
+            const email = document.getElementById("editEmail").value;
+            if(!email) { alert("No email found for this user."); return; } 
+             
+            if(confirm(`Send an official password reset email to: ${email}?`)) { 
+                try { 
+                    await sendPasswordResetEmail(auth, email);
+                    alert(`✅ Password reset email sent to ${email}`); 
+                } catch(e) { 
+                    alert("Error sending reset email: " + e.message);
+                } 
+            } 
+        }, 
+ 
+        // --- HELPER: CHECKBOX GENERATOR --- 
+        renderCheckboxes: (containerId, selectedRoles = []) => { 
+            const container = document.getElementById(containerId);
+            container.innerHTML = ""; 
+            AVAILABLE_ROLES.forEach(role => { 
+                const isChecked = selectedRoles.includes(role) ? 'checked' : ''; 
+                let colorClass = "text-slate-400"; 
+                if(role === 'admin') colorClass = "text-red-400 font-bold"; 
+                else if(role === 'viewer') colorClass = "text-slate-500 italic"; 
+                else if(role.startsWith('Worship')) colorClass = "text-purple-400"; 
+                else if(role.startsWith('Finance')) colorClass = "text-green-400"; 
+                 
+                const html = ` 
+                    <label class="role-option ${colorClass}"> 
+                        <input type="checkbox" value="${role}" ${isChecked}> ${role} 
+                    </label> 
+                `; 
+                container.innerHTML += html; 
+            });
+        }, 
+ 
+        getCheckedRoles: (containerId) => { 
+            const container = document.getElementById(containerId);
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked'); 
+            return Array.from(checkboxes).map(cb => cb.value); 
+        }, 
+ 
+        // --- LOAD DATA --- 
+        loadAllUsers: async () => { 
+            const listBody = document.getElementById("userListBody");
+            listBody.innerHTML = `<div class="p-8 text-center text-slate-500">Loading Database...</div>`; 
+             
+            try { 
+                const snap = await getDocs(collection(db, "users"));
+                allUsers = [];  
+                snap.forEach(doc => { 
+                    allUsers.push({ id: doc.id, ...doc.data() }); 
+                });
+                app.renderTable(); 
+                app.updateStats(); 
+            } catch (e) { 
+                listBody.innerHTML = `<div class="p-8 text-center text-red-500">Error: ${e.message}</div>`;
+            } 
+        }, 
+ 
+        // --- FILTER & RENDER --- 
+        filterBy: (type, btn) => { 
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); 
+            btn.classList.add('active'); 
+            app.renderTable(); 
+        }, 
+ 
+        updateStats: () => { 
+            const total = allUsers.length;
+            const disabled = allUsers.filter(u => u.accountStatus === 'disabled').length; 
+            document.getElementById("statTotal").innerText = total; 
+            document.getElementById("statActive").innerText = total - disabled; 
+            document.getElementById("statDisabled").innerText = disabled;
+        }, 
+ 
+        renderTable: () => { 
+            const listBody = document.getElementById("userListBody");
+            listBody.innerHTML = ""; 
+ 
+            const filtered = allUsers.filter(u => { 
+                const status = u.accountStatus || 'active'; 
+                if (currentFilter === 'active') return status !== 'disabled'; 
+                if (currentFilter === 'disabled') return status === 'disabled'; 
+                return true; 
+            });
+            if(filtered.length === 0) { 
+                listBody.innerHTML = `<div class="p-8 text-center text-slate-500 italic">No users found matching current filter.</div>`;
+                return; 
+            } 
+ 
+            filtered.forEach(u => { 
+                const email = u.email || `<span class="text-slate-600 italic">No Email Linked</span>`; 
+                const status = u.accountStatus || 'active'; 
+                 
+                // LAST SEEN & PORTAL LOGIC (UPDATED HERE)
+                const lastSeen = u.lastLogin ? new Date(u.lastLogin.seconds * 1000).toLocaleString() : "Never";
+                const lastPortal = u.lastPortal || "Unknown System";
+
+                let roles = []; 
+                if (Array.isArray(u.roles)) { 
+                    roles = u.roles; 
+                } else if (u.role) { 
+                    roles = [u.role];  
+                } 
+ 
+                let rolesHtml = roles.map(r => { 
+                    let badgeClass = 'badge-user'; 
+                    if (r === 'admin') badgeClass = 'badge-admin'; 
+                    else if (r === 'viewer') badgeClass = 'badge-viewer'; 
+                    else if (r.startsWith('Worship')) badgeClass = 'badge-worship'; 
+                    else if (r.startsWith('Finance')) badgeClass = 'badge-finance'; 
+                    else if (r.startsWith('Attendant')) badgeClass = 'badge-attendant'; 
+                    else if (r.startsWith('Scheduler')) badgeClass = 'badge-scheduler';
+                    else if (r.startsWith('Presenter')) badgeClass = 'badge-presenter'; 
+                    else if (r.startsWith('Prayer')) badgeClass = 'badge-prayer'; 
+                    return `<span class="badge ${badgeClass}">${r}</span>`; 
+                }).join("");
+                if (!rolesHtml) rolesHtml = `<span class="text-slate-600 text-xs italic">No specific roles</span>`;
+                let statusHtml = status === 'disabled'  
+                    ? `<div class="flex items-center text-red-400 text-xs font-bold uppercase"><div class="status-dot bg-red-500"></div> Disabled</div>` 
+                    : `<div class="flex items-center text-green-400 text-xs font-bold uppercase"><div class="status-dot bg-green-500"></div> Active</div>`;
+                const row = document.createElement("div"); 
+                row.className = "list-row"; 
+                row.innerHTML = ` 
+                    <div class="min-w-0"> 
+                        <div class="font-bold text-white text-sm md:text-base truncate">${email}</div> 
+                        <div class="text-[10px] text-slate-500 truncate mt-0.5">
+                            ${lastSeen} <span class="text-slate-600 mx-1">•</span> 
+                            <span class="text-blue-400 font-medium">${lastPortal}</span>
+                        </div>
+                        <div class="font-mono text-xxs text-slate-600 truncate mt-0.5 hidden md:block">${u.id}</div> 
+                    </div> 
+                    <div class="list-meta">${rolesHtml}</div> 
+                    <div>${statusHtml}</div> 
+                    <div class="flex justify-end"> 
+                        <button class="btn btn-secondary text-xs py-1 px-3" onclick="app.openEdit('${u.id}')">Manage</button> 
+                    </div> 
+                `;
+                listBody.appendChild(row); 
+            }); 
+        }, 
+ 
+        // --- CREATE USER --- 
+        openCreateModal: () => { 
+            document.getElementById("createModal").classList.remove("hidden");
+            app.renderCheckboxes('createRolesContainer', []); 
+            document.getElementById("newEmail").value = ""; 
+            document.getElementById("newPass").value = ""; 
+        }, 
+        createUser: async () => { 
+            const email = document.getElementById("newEmail").value;
+            const roles = app.getCheckedRoles('createRolesContainer');  
+            const pass = document.getElementById("newPass").value; 
+ 
+            if(!email || pass.length < 6) return alert("Valid Email and Password (6+ chars) required.");
+            const btn = document.querySelector("#createModal .btn-primary"); 
+            const originalText = btn.innerText; 
+            btn.innerText = "Creating..."; 
+            btn.disabled = true;
+            try { 
+                const secApp = initializeApp(firebaseConfig, "secondary");
+                const secAuth = getAuth(secApp); 
+                const cred = await createUserWithEmailAndPassword(secAuth, email, pass); 
+                await signOut(secAuth);
+                await setDoc(doc(db, "users", cred.user.uid), { 
+                    email: email, roles: roles, accountStatus: 'active', createdAt: new Date().toISOString() 
+                });
+                alert("User created successfully!"); 
+                document.getElementById("createModal").classList.add("hidden"); 
+                app.loadAllUsers(); 
+            } catch(e) {  
+                alert("Error: " + e.message);
+            } finally { 
+                btn.innerText = originalText;
+                btn.disabled = false; 
+            } 
+        }, 
+ 
+        // --- EDIT / MANAGE --- 
+        openEdit: (uid) => { 
+            const user = allUsers.find(u => u.id === uid);
+            if(!user) return; 
+ 
+            editTargetId = uid; 
+            document.getElementById("targetUid").innerText = uid; 
+            document.getElementById("editEmail").value = user.email || ""; 
+             
+            let currentRoles = [];
+            if(Array.isArray(user.roles)) currentRoles = user.roles; 
+            else if(user.role) currentRoles = [user.role]; 
+ 
+            app.renderCheckboxes('editRolesContainer', currentRoles); 
+             
+            const statusArea = document.getElementById("statusActionArea");
+            const isDisabled = user.accountStatus === 'disabled'; 
+             
+            if(isDisabled) { 
+                statusArea.innerHTML = `<button class="btn btn-primary w-full bg-green-600 hover:bg-green-500 text-white" onclick="app.toggleStatus('active')">✅ Re-Enable Account</button>`;
+                document.getElementById("editStatusBadge").innerHTML = `<span class="badge bg-red-500/20 text-red-400 border-red-500/50">DISABLED</span>`; 
+            } else { 
+                statusArea.innerHTML = `<button class="btn btn-warning w-full" onclick="app.toggleStatus('disabled')">⛔ Deactivate Account</button>`;
+                document.getElementById("editStatusBadge").innerHTML = `<span class="badge bg-green-500/20 text-green-400 border-green-500/50">ACTIVE</span>`; 
+            } 
+ 
+            document.getElementById("editModal").classList.remove("hidden");
+        }, 
+ 
+        toggleStatus: async (newStatus) => { 
+            if(!editTargetId) return;
+            if(!confirm(`Change status to: ${newStatus.toUpperCase()}?`)) return; 
+            try { 
+                await updateDoc(doc(db, "users", editTargetId), { accountStatus: newStatus });
+                document.getElementById("editModal").classList.add("hidden"); 
+                app.loadAllUsers(); 
+            } catch(e) { alert("Error: " + e.message); } 
+        }, 
+ 
+        saveUserChanges: async () => { 
+            if(!editTargetId) return;
+            const newRoles = app.getCheckedRoles('editRolesContainer');  
+            const newEmail = document.getElementById("editEmail").value; 
+ 
+            try { 
+                await updateDoc(doc(db, "users", editTargetId), {  
+                    roles: newRoles, 
+                    email: newEmail  
+                });
+                document.getElementById("editModal").classList.add("hidden"); 
+                app.loadAllUsers(); 
+            } catch(e) { alert("Error: " + e.message); } 
+        }, 
+ 
+        deleteUser: async () => { 
+            if(!editTargetId) return;
+            if(prompt("Type DELETE to confirm permanent deletion:") !== "DELETE") return; 
+            try { 
+                await deleteDoc(doc(db, "users", editTargetId));
+                alert("User deleted."); 
+                document.getElementById("editModal").classList.add("hidden"); 
+                app.loadAllUsers(); 
+            } catch(e) { alert("Error: " + e.message);
+            } 
+        } 
+    }; 
+</script> 
+</body> 
+</html>
